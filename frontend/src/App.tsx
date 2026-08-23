@@ -1,18 +1,19 @@
-import { useMemo, useRef, useState } from 'react';
-import { Box, FolderOpen, ListChecks, RotateCcw, Terminal } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, Settings as SettingsIcon, Terminal } from 'lucide-react';
 import { useSocket } from './hooks/useSocket';
 import { parseToolpath } from './gcode/parseToolpath';
 import { renderThumbnail } from './gcode/renderThumbnail';
 import { extractMetadata, formatMetadataSummary } from './gcode/extractMetadata';
 import { currentPassAt, elapsedSecondsAt, estimateTiming } from './gcode/estimateTime';
 import { Header } from './components/Header';
-import { SettingsModal } from './components/SettingsModal';
 import { ConnectPanel } from './components/ConnectPanel';
 import { StatusPanel } from './components/StatusPanel';
 import { JogPanel } from './components/JogPanel';
 import { ActionsPanel } from './components/ActionsPanel';
-import { EmergencyStopButton } from './components/EmergencyStopButton';
 import { PluginPanels } from './components/PluginPanels';
+import { PluginsManagerPanel } from './components/PluginsManagerPanel';
+import { AppSettingsPanel } from './components/AppSettingsPanel';
+import { AboutPanel } from './components/AboutPanel';
 import { ProgramPanel } from './components/ProgramPanel';
 import { ToolpathPreview3D, type ToolpathPreviewHandle } from './components/ToolpathPreview3D';
 import { ConsolePanel } from './components/ConsolePanel';
@@ -20,11 +21,17 @@ import { FileManagerPanel } from './components/FileManagerPanel';
 import { Tabs } from './components/Tabs';
 import { Card, CardHeader, CardContent } from './components/ui/Card';
 import { IconButton } from './components/ui/IconButton';
+import { Switch } from './components/ui/Switch';
 import { Sidebar } from './components/ui/Sidebar';
 import { Drawer } from './components/ui/Drawer';
 import './App.css';
 
 const GCODE_EXTENSIONS = /\.(nc|gcode|tap|txt|cnc)$/i;
+
+// A display-only preference (which side of the grid the toolpath renders
+// on), not machine state - localStorage is the right home for it, not the
+// backend settings store, since it's purely how this browser likes to look.
+const TOOLPATH_ABOVE_GRID_KEY = 'fluidnc.toolpathAboveGrid';
 
 export default function App() {
   const {
@@ -43,6 +50,7 @@ export default function App() {
     invokePluginAction,
   } = useSocket();
   const controlsDisabled = !connectionOpen;
+  const programRunning = programStatus.state === 'running';
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [gcodeText, setGcodeText] = useState('');
@@ -102,19 +110,44 @@ export default function App() {
   const toolpathRef = useRef<ToolpathPreviewHandle>(null);
   const dragCounter = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [toolpathViewOpen, setToolpathViewOpen] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [toolpathAboveGrid, setToolpathAboveGrid] = useState(
+    () => localStorage.getItem(TOOLPATH_ABOVE_GRID_KEY) !== 'false',
+  );
+  useEffect(() => {
+    localStorage.setItem(TOOLPATH_ABOVE_GRID_KEY, String(toolpathAboveGrid));
+  }, [toolpathAboveGrid]);
 
   return (
     <>
       <Sidebar
-        items={[{ key: 'files', icon: <FolderOpen size={19} />, label: 'File Manager' }]}
+        items={[
+          { key: 'files', icon: <FolderOpen size={22} />, label: 'Files' },
+          { key: 'plugins', icon: <Puzzle size={22} />, label: 'Plugins' },
+          { key: 'settings', icon: <SettingsIcon size={22} />, label: 'Settings' },
+        ]}
+        footerItems={[{ key: 'about', icon: <Info size={22} />, label: 'About' }]}
+        version="v0.1.0"
         active={activePanel}
         onSelect={(key) => setActivePanel((prev) => (prev === key ? null : key))}
       />
 
       <Drawer open={activePanel === 'files'} title="File Manager" onClose={() => setActivePanel(null)}>
         <FileManagerPanel onLoad={loadFromLibrary} />
+      </Drawer>
+
+      <Drawer open={activePanel === 'plugins'} title="Plugins" onClose={() => setActivePanel(null)}>
+        <PluginsManagerPanel plugins={plugins} send={send} />
+      </Drawer>
+
+      <Drawer open={activePanel === 'settings'} title="Settings" onClose={() => setActivePanel(null)}>
+        <AppSettingsPanel settings={settings} send={send} />
+      </Drawer>
+
+      <Drawer open={activePanel === 'about'} title="About" onClose={() => setActivePanel(null)}>
+        <AboutPanel />
       </Drawer>
 
       <div
@@ -160,16 +193,7 @@ export default function App() {
         wsReady={wsReady}
         connectionOpen={connectionOpen}
         status={status}
-        programRunning={programStatus.state === 'running'}
-        onOpenSettings={() => setSettingsOpen(true)}
-        send={send}
-      />
-
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        plugins={plugins}
-        settings={settings}
+        programRunning={programRunning}
         send={send}
       />
 
@@ -177,8 +201,7 @@ export default function App() {
         <div className="column">
           <ConnectPanel ports={ports} connectionOpen={connectionOpen} wsReady={wsReady} send={send} />
           <StatusPanel status={status} />
-          <ActionsPanel disabled={controlsDisabled} send={send} />
-          <EmergencyStopButton visible={connectionOpen} send={send} />
+          <ActionsPanel disabled={controlsDisabled} estopActive={programRunning} send={send} />
           <PluginPanels
             plugins={plugins}
             column="left"
@@ -192,9 +215,28 @@ export default function App() {
           <Card>
             <CardHeader
               actions={
-                <IconButton aria-label="Reset view" title="Reset view" onClick={() => toolpathRef.current?.resetView()}>
-                  <RotateCcw size={14} />
-                </IconButton>
+                <div className="toolpath-view-controls">
+                  <button aria-label="Fit view to toolpath" title="Fit view to toolpath" onClick={() => toolpathRef.current?.resetView()}>
+                    <Maximize size={14} />
+                    Fit
+                  </button>
+                  <IconButton
+                    aria-label="Toolpath display options"
+                    title="Toolpath display options"
+                    onClick={() => setToolpathViewOpen((v) => !v)}
+                  >
+                    <ChevronDown size={16} />
+                  </IconButton>
+                  {toolpathViewOpen && (
+                    <div className="dropdown-panel right">
+                      <Switch
+                        checked={toolpathAboveGrid}
+                        onChange={setToolpathAboveGrid}
+                        label={toolpathAboveGrid ? 'Showing job above grid' : 'Showing job below grid'}
+                      />
+                    </div>
+                  )}
+                </div>
               }
             >
               <Box size={14} />
@@ -210,6 +252,7 @@ export default function App() {
                   segments={segments}
                   currentPosition={workPosition}
                   sentLines={programStatus.sent}
+                  aboveGrid={toolpathAboveGrid}
                 />
               </div>
               <div className="toolpath-legend">
@@ -263,12 +306,23 @@ export default function App() {
                         Console
                       </>
                     ),
+                    actions: (
+                      <Switch
+                        size="sm"
+                        tone="success"
+                        labelPosition="start"
+                        checked={autoScroll}
+                        onChange={setAutoScroll}
+                        label="Auto-scroll"
+                      />
+                    ),
                     content: (
                       <ConsolePanel
                         log={log}
                         disabled={controlsDisabled}
                         autoFeedEnabled={settings?.general.consoleAutoFeedEnabled ?? true}
                         defaultFeed={settings?.general.consoleDefaultFeed ?? 300}
+                        autoScroll={autoScroll}
                         send={send}
                       />
                     ),

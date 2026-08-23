@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { CornerDownLeft } from 'lucide-react';
 import type { LogEntry } from '../types';
-import { Switch } from './ui/Switch';
 
 interface Props {
   log: LogEntry[];
   disabled: boolean;
   autoFeedEnabled: boolean;
   defaultFeed: number;
+  /** Owned by the parent (not this panel) - the Console tab bar's Auto-scroll switch lives outside this component. */
+  autoScroll: boolean;
   send: (message: Record<string, unknown>) => void;
 }
 
@@ -17,9 +18,8 @@ interface Props {
 const FEED_MOVE = /G0*[123](?!\d)/i;
 const HAS_FEED_WORD = /F[-+]?[\d.]/i;
 
-export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, send }: Props) {
+export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, autoScroll, send }: Props) {
   const [command, setCommand] = useState('');
-  const [autoScroll, setAutoScroll] = useState(true);
   const logRef = useRef<HTMLDivElement>(null);
 
   // Re-runs on every new log line, and also the moment the checkbox is
@@ -49,9 +49,6 @@ export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, send
 
   return (
     <div className="console">
-      <div className="log-toolbar">
-        <Switch size="sm" checked={autoScroll} onChange={setAutoScroll} label="Auto-scroll" />
-      </div>
       <div className="log" ref={logRef}>
         {log.map((entry) => (
           <div key={entry.id} className={`log-line log-${entry.kind}`}>

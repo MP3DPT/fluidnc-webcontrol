@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
-import { ArrowDownLeft, ArrowDownRight, ArrowUp, ArrowUpLeft, ArrowUpRight, ArrowDown, LocateFixed, Move } from 'lucide-react';
+import {
+  ArrowDownLeft,
+  ArrowDownRight,
+  ArrowUp,
+  ArrowUpLeft,
+  ArrowUpRight,
+  ArrowDown,
+  ChevronDown,
+  ChevronUp,
+  LocateFixed,
+  Move,
+} from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { CoordinateDisplay } from './ui/CoordinateDisplay';
 import { Divider } from './ui/Divider';
 import type { Position } from '../types';
 
 const STEP_SIZES = [0.1, 1, 10, 50];
+const FEED_INCREMENT = 10;
 
 // CNCjs convention: arrows for X/Y, Page Up/Down for Z.
 const KEY_JOG_MAP: Record<string, { X?: number; Y?: number; Z?: number }> = {
@@ -76,7 +88,7 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
     <Card>
       <CardHeader>
         <Move size={14} />
-        Jog
+        Jog Control
       </CardHeader>
       <CardContent>
         <div>
@@ -94,8 +106,8 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
 
         <Divider />
 
-        <div className="row">
-          <label>
+        <div className="row jog-rate-row">
+          <label className="field-step">
             Step
             <select value={step} onChange={(e) => setStep(Number(e.target.value))}>
               {STEP_SIZES.map((s) => (
@@ -105,16 +117,36 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
               ))}
             </select>
           </label>
-          <label>
+          <label className="field-feed">
             Feed
-            <span className="field-row">
+            <span className="feed-input">
               <input
                 type="number"
                 value={feedrate}
                 min={1}
-                onChange={(e) => setFeedrate(Number(e.target.value))}
+                onChange={(e) => setFeedrate(Math.max(1, Number(e.target.value)))}
               />
-              <span>mm/min</span>
+              <span className="feed-suffix">
+                <span className="feed-unit">mm/min</span>
+                <span className="feed-spin">
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label="Increase feed"
+                    onClick={() => setFeedrate((f) => f + FEED_INCREMENT)}
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label="Decrease feed"
+                    onClick={() => setFeedrate((f) => Math.max(1, f - FEED_INCREMENT))}
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </span>
+              </span>
             </span>
           </label>
         </div>
@@ -125,13 +157,13 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
               <span className="jog-axis-tag">X / Y</span>
               <div className="jog-compass">
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: -step, Y: step })} aria-label="Jog X- Y+">
-                  <ArrowUpLeft size={15} />
+                  <ArrowUpLeft size={19} />
                 </button>
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ Y: step })} aria-label="Jog Y+">
-                  <ArrowUp size={16} />
+                  <ArrowUp size={21} />
                 </button>
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: step, Y: step })} aria-label="Jog X+ Y+">
-                  <ArrowUpRight size={15} />
+                  <ArrowUpRight size={19} />
                 </button>
 
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: -step })} aria-label="Jog X-">
@@ -150,13 +182,13 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
                 </button>
 
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: -step, Y: -step })} aria-label="Jog X- Y-">
-                  <ArrowDownLeft size={15} />
+                  <ArrowDownLeft size={19} />
                 </button>
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ Y: -step })} aria-label="Jog Y-">
-                  <ArrowDown size={16} />
+                  <ArrowDown size={21} />
                 </button>
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: step, Y: -step })} aria-label="Jog X+ Y-">
-                  <ArrowDownRight size={15} />
+                  <ArrowDownRight size={19} />
                 </button>
               </div>
             </div>
@@ -165,13 +197,13 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
               <span className="jog-axis-tag">Z</span>
               <div className="jog-z-strip">
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ Z: step })} aria-label="Jog Z+">
-                  <ArrowUp size={16} />
+                  <ArrowUp size={21} />
                 </button>
                 <button className="jog-btn jog-hub" disabled title="Vertical axis">
                   Z
                 </button>
                 <button className="jog-btn" disabled={disabled} onClick={() => jog({ Z: -step })} aria-label="Jog Z-">
-                  <ArrowDown size={16} />
+                  <ArrowDown size={21} />
                 </button>
               </div>
             </div>
@@ -179,15 +211,15 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
 
           <div className="jog-zero-row">
             <button className="tertiary" disabled={disabled} onClick={() => zero('X')}>
-              <LocateFixed size={13} />
+              <LocateFixed size={15} />
               Zero X
             </button>
             <button className="tertiary" disabled={disabled} onClick={() => zero('Y')}>
-              <LocateFixed size={13} />
+              <LocateFixed size={15} />
               Zero Y
             </button>
             <button className="tertiary" disabled={disabled} onClick={() => zero('Z')}>
-              <LocateFixed size={13} />
+              <LocateFixed size={15} />
               Zero Z
             </button>
           </div>

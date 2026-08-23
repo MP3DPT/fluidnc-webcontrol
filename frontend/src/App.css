@@ -44,8 +44,8 @@
   --text-label: 600 0.6875rem/1.2 var(--font-sans);
   --text-body: 500 0.875rem/1.4 var(--font-sans);
   --text-caption: 400 0.75rem/1.5 var(--font-sans);
-  --text-machine-value: 700 2rem/1 var(--font-mono);
-  --text-machine-value-sm: 600 1.125rem/1 var(--font-mono);
+  --text-machine-value: 700 2.75rem/1 var(--font-mono);
+  --text-machine-value-sm: 600 1.25rem/1 var(--font-mono);
   --text-coordinate-label: 700 0.6875rem/1 var(--font-sans);
 
   /* --- Spacing (Tailwind-style 4px scale) --- */
@@ -130,12 +130,20 @@ h1, h2, h3, h4, p {
 
 /* ============================================================
    App shell
+   A fixed-height application shell, not a scrolling page - the header is
+   pinned, and each column manages its own vertical overflow independently
+   (scrolling internally if its stacked cards don't fit) rather than
+   forcing every value down to fit or leaving empty space below a short
+   column. This is the standard shape for a dedicated control app, not a
+   web page: the browser window is the frame, not something the content
+   scrolls past.
    ============================================================ */
 .app {
-  min-height: 100vh;
-  margin-left: 3.5rem;
+  height: 100vh;
+  margin-left: 5rem;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* ============================================================
@@ -146,10 +154,10 @@ h1, h2, h3, h4, p {
   top: 0;
   left: 0;
   bottom: 0;
-  width: 3.5rem;
+  width: 5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: var(--space-2);
   padding: var(--space-3) 0;
   background: var(--surface);
@@ -157,34 +165,67 @@ h1, h2, h3, h4, p {
   z-index: 40;
 }
 
+.side-rail-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.side-rail-version {
+  text-align: center;
+  font: var(--text-caption);
+  font-size: 0.5625rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 .side-rail-button {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  gap: var(--space-1);
+  width: 100%;
+  height: auto;
+  padding: var(--space-4) 0;
   border: none;
-  border-radius: var(--radius);
+  border-left: 4px solid transparent;
+  /* Flush/square against the rail's own outer edge, rounded only where it
+     meets the content area - a rounded left edge would look like it's
+     floating away from the edge it's docked to. */
+  border-radius: 0 0.25rem 0.25rem 0;
   background: none;
   color: var(--text-secondary);
 }
 
-.side-rail-button:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
+.side-rail-label {
+  font: var(--text-label);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.side-rail-button:not(.active):hover {
+  background: var(--primary-soft);
+  border-left-color: var(--primary);
+  color: var(--primary);
 }
 
 .side-rail-button.active {
   background: var(--primary-soft);
+  border-left-color: var(--primary);
   color: var(--primary);
 }
 
 .drawer {
   position: fixed;
   top: 0;
-  left: 3.5rem;
+  left: 5rem;
   bottom: 0;
-  width: min(30rem, calc(100vw - 3.5rem));
+  width: min(38rem, calc(100vw - 5rem));
   background: var(--surface);
   border-right: 1px solid var(--border);
   box-shadow: var(--shadow-md);
@@ -377,12 +418,11 @@ h1, h2, h3, h4, p {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  height: 2.875rem;
-  padding: 0 var(--space-4);
+  height: 3.5rem;
+  padding: 0 var(--space-5);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 20;
 }
 
@@ -396,9 +436,27 @@ h1, h2, h3, h4, p {
 }
 
 .app-logo {
-  color: var(--primary);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
   flex-shrink: 0;
+}
+
+.app-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
 .app-header h1 {
@@ -413,15 +471,30 @@ h1, h2, h3, h4, p {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding-left: var(--space-3);
-  border-left: 1px solid var(--border);
   white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
 }
 
 @media (max-width: 640px) {
   .tagline {
     display: none;
   }
+}
+
+.toolpath-view-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
 }
 
 .dropdown-panel {
@@ -450,26 +523,68 @@ h1, h2, h3, h4, p {
 
 main {
   flex: 1;
+  min-height: 0;
   width: 100%;
-  max-width: 1900px;
-  margin: 0 auto;
-  padding: var(--space-3);
+  padding: var(--space-5);
   display: grid;
-  grid-template-columns: minmax(272px, 300px) minmax(0, 1fr) minmax(280px, 330px);
-  gap: var(--space-3);
-  align-items: start;
+  grid-template-columns: 340px minmax(0, 1fr) 360px;
+  gap: var(--space-5);
 }
 
+/* Each column scrolls independently once its own stacked cards exceed the
+   available height, instead of the whole page scrolling (or everything
+   getting squeezed to fit). A shorter window just means more scrolling
+   inside a column, never smaller text and never empty space below it. */
 .column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Scrolling itself still works (wheel/trackpad/touch) - only the visible
+     track/thumb is suppressed. A native OS scrollbar is one of the more
+     obvious "this is a browser tab" tells; a dedicated control app has no
+     reason to show one just because a column's stack is a bit tall. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-@media (max-width: 1180px) {
+.column::-webkit-scrollbar {
+  display: none;
+}
+
+/* Toolpath is the dominant element - it grows to fill whatever height
+   Program/Console doesn't need, down to a floor that keeps it usable
+   rather than being crushed. */
+.column.wide > .card:first-child {
+  flex: 1 1 auto;
+  min-height: 320px;
+}
+
+.column.wide > .card:last-child {
+  flex: 0 0 auto;
+}
+
+/* 1200-1599px: keep the full three-column layout, tighten proportions. */
+@media (max-width: 1599px) {
+  main {
+    grid-template-columns: 300px minmax(0, 1fr) 320px;
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+}
+
+/* Below 1200px there's no longer room for three columns without either
+   hiding controls behind a toggle (which the jog/E-stop controls should
+   never be) or crushing them - reflow into two, with the toolpath+program
+   column promoted to the top full-width row. */
+@media (max-width: 1199px) {
   main {
     grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    padding: var(--space-3);
   }
   .column.wide {
     grid-column: 1 / -1;
@@ -480,7 +595,7 @@ main {
 @media (max-width: 720px) {
   main {
     grid-template-columns: 1fr;
-    padding: var(--space-4);
+    padding: var(--space-3);
     gap: var(--space-3);
   }
   .column.wide {
@@ -534,6 +649,44 @@ main {
 }
 .status-dot.offline {
   background: var(--danger);
+}
+
+.port-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.btn-square {
+  width: 2.25rem;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.connection-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--text-body);
+  font-weight: 600;
+}
+
+.connection-status.online {
+  color: var(--success);
+}
+.connection-status.warn {
+  color: var(--text-secondary);
+}
+.connection-status.offline {
+  color: var(--danger);
 }
 
 /* ============================================================
@@ -604,7 +757,9 @@ main {
 .machine-badge {
   font: var(--text-label);
   font-size: 0.75rem;
-  padding: var(--space-2) var(--space-3);
+  height: 2.625rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
 }
 
 .machine-badge .badge-dot {
@@ -629,8 +784,9 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .card-title {
@@ -638,13 +794,13 @@ main {
   align-items: center;
   gap: var(--space-2);
   font: var(--text-section-title);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .card-title svg {
-  color: var(--text-muted);
+  color: var(--primary);
   flex-shrink: 0;
 }
 
@@ -656,10 +812,10 @@ main {
 }
 
 .card-content {
-  padding: var(--space-3);
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 /* Used wherever a group of .row button rows are stacked (Actions, Program
@@ -676,9 +832,20 @@ main {
 
 /* A card that houses only the 3D canvas needs the content to have zero side
    padding so the canvas can go edge-to-edge, with padding kept for the
-   legend text below it. */
+   legend text below it. flex:1 lets it fill whatever height the Toolpath
+   card's own flex:1 gives it; the double-click wrapper and the canvas host
+   below both need the same treatment so the height actually reaches the
+   canvas instead of stopping at the first flexless ancestor. */
 .card-content.toolpath-content {
   padding: var(--space-2) var(--space-3) var(--space-3);
+  flex: 1;
+  min-height: 0;
+}
+
+.toolpath-content > div:first-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 .plugin-panel-frame {
@@ -750,7 +917,7 @@ select {
   background: var(--surface-elevated);
   color: var(--text-primary);
   margin: 0;
-  height: 2rem;
+  height: 2.25rem;
   box-sizing: border-box;
   vertical-align: middle;
   font: var(--text-body);
@@ -812,7 +979,7 @@ button {
   justify-content: center;
   gap: var(--space-2);
   padding: 0 var(--space-4);
-  height: 2rem;
+  height: 2.25rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-elevated);
@@ -896,6 +1063,57 @@ button.ghost:not(:disabled):hover {
   color: var(--text-muted);
   font: var(--text-caption);
   margin: 0;
+}
+
+.hint a {
+  color: var(--primary);
+}
+
+.hint a:hover {
+  color: var(--primary-hover);
+}
+
+.about-credit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.about-credit-logo {
+  height: 1.75rem;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.about-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.about-coffee-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  height: 2.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--text-body);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.about-coffee-link:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .error-text {
@@ -985,42 +1203,89 @@ button.ghost:not(:disabled):hover {
   }
 }
 
+/* Per-axis bordered card - Machine Status's compact "at a glance" readout,
+   distinct from the lg/sm variants' inline rows. */
+.coord-display-boxed {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.coord-display-boxed .coord-axis {
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: var(--space-3) var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.coord-display-boxed .coord-axis-value {
+  display: block;
+  width: 100%;
+  font: var(--text-machine-value-sm);
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.coord-display-boxed .coord-axis-unit {
+  display: block;
+  margin-top: 0.1rem;
+  font: var(--text-caption);
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+}
+
 /* ============================================================
    MachineStatus (state badge used inside the Machine Status card)
    ============================================================ */
 .state-display {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  background: var(--surface-elevated);
-  border-radius: var(--radius-sm);
   margin-bottom: 0;
+  padding: var(--space-3);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+}
+
+.state-display .badge {
+  padding: 0;
+  gap: var(--space-2);
+  background: none;
+  border-color: transparent;
 }
 
 .state-display .badge-dot {
-  width: 0.6rem;
-  height: 0.6rem;
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .state-display-label {
   font: var(--text-machine-value-sm);
+  font-size: 1.0625rem;
   letter-spacing: 0.02em;
+  color: var(--text-primary);
 }
 
 .pins {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-2);
 }
 
 .pin {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   font: var(--text-caption);
   font-size: 0.6875rem;
   font-weight: 600;
-  padding: var(--space-1) var(--space-1);
+  padding: var(--space-2) var(--space-1);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-elevated);
@@ -1034,44 +1299,191 @@ button.ghost:not(:disabled):hover {
 }
 
 /* ============================================================
-   Emergency stop
+   Actions panel
    ============================================================ */
-.estop-wrap {
-  border: 1px solid var(--danger);
-  border-radius: var(--radius-md);
-  background: var(--danger-soft);
-  padding: var(--space-2);
+.actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
 }
 
+.actions-grid button {
+  height: 3rem;
+}
+
+.actions-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+/* ============================================================
+   Emergency stop
+   Always rendered (never hidden) - only "active" (red, clickable)
+   while a program is actually running; muted/disabled otherwise,
+   including while idle, jogging or homing.
+   ============================================================ */
 .estop-button {
   width: 100%;
-  height: 2.75rem;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: var(--space-4) var(--space-3);
   background: var(--danger);
   border: 1px solid var(--danger);
   color: #fff;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.estop-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 800;
   font-size: 0.9375rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: var(--radius);
+  color: inherit;
 }
 
-.estop-button:hover {
+.estop-subtitle {
+  font: var(--text-caption);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.estop-button:not(:disabled):hover {
   background: var(--danger-hover);
   border-color: var(--danger-hover);
 }
 
-.estop-button:active {
+.estop-button:not(:disabled):active {
   transform: scale(0.98);
 }
 
-.estop-hint {
-  margin: var(--space-1) 0 0;
+.estop-button:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--surface-elevated);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.estop-button:disabled .estop-subtitle {
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   Jog Step/Feed row
+   ============================================================ */
+.jog-rate-row {
+  flex-wrap: nowrap;
+}
+
+.field-step {
+  flex: 2;
+  min-width: 0;
+}
+
+.field-step select {
+  width: 100%;
+}
+
+.field-feed {
+  flex: 3;
+  min-width: 0;
+}
+
+/* A compound control (number input + unit + spin buttons) styled as one
+   bordered field, not three separate ones - the plain <input> disables its
+   native spinner via appearance:none below so only these buttons control it. */
+.feed-input {
+  display: flex;
+  align-items: stretch;
+  height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+
+.feed-input:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.feed-input input[type='number'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  border: none;
+  background: none;
+  padding: 0 0 0 var(--space-3);
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.feed-input input[type='number']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.feed-input input[type='number']::-webkit-outer-spin-button,
+.feed-input input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* The unit + spinner read as one lighter "pill" set into the field, distinct
+   from the darker number input beside it - two-tone, not one flat box. */
+.feed-suffix {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  padding-left: var(--space-2);
+  background: var(--surface-hover);
+  border-left: 1px solid var(--border);
+}
+
+.feed-unit {
+  align-self: center;
+  padding-right: var(--space-2);
   font: var(--text-caption);
-  color: var(--danger);
-  text-align: center;
-  font-weight: 600;
-  opacity: 0.85;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.feed-spin {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+}
+
+.feed-spin button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 1.5rem;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
+}
+
+.feed-spin button:first-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.feed-spin button:not(:disabled):hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 /* ============================================================
@@ -1086,15 +1498,15 @@ button.ghost:not(:disabled):hover {
 
 .jog-compass {
   display: grid;
-  grid-template-columns: repeat(3, 2.5rem);
-  grid-template-rows: repeat(3, 2.5rem);
-  gap: var(--space-1);
+  grid-template-columns: repeat(3, 3.25rem);
+  grid-template-rows: repeat(3, 3.25rem);
+  gap: var(--space-2);
 }
 
 .jog-z-strip {
   display: grid;
-  grid-template-rows: repeat(3, 2.5rem);
-  gap: var(--space-1);
+  grid-template-rows: repeat(3, 3.25rem);
+  gap: var(--space-2);
 }
 
 .jog-cluster {
@@ -1117,7 +1529,7 @@ button.ghost:not(:disabled):hover {
   padding: 0;
   height: auto;
   width: 100%;
-  font-size: 1rem;
+  font-size: 1.1875rem;
   font-weight: 700;
   background: var(--surface-elevated);
   color: var(--text-secondary);
@@ -1150,23 +1562,29 @@ button.ghost:not(:disabled):hover {
 
 .jog-zero-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   width: 100%;
 }
 
+/* Fits all three Zero buttons on one row at the side column's normal
+   width instead of "Zero Z" wrapping to a row of its own - a wasted line
+   with nothing beside it. Unconditional (not tied to the short-viewport
+   tier below) since it's a strict improvement at any height. */
+
+/* min-width:0 lets a flex item actually shrink to the row's available
+   space instead of the default content-based floor - without it, a
+   narrower column doesn't wrap "Zero Z" onto its own line, it silently
+   clips the label instead (the column's own overflow-x:hidden hides the
+   evidence, so this is easy to miss without testing every width). */
 .jog-zero-row button {
-  flex: 1;
+  flex: 1 1 5.25rem;
+  min-width: 0;
 }
 
 /* ============================================================
    Console
    ============================================================ */
-.log-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--space-2);
-}
-
 .console .log {
   height: 110px;
   overflow-y: auto;
@@ -1208,6 +1626,10 @@ button.ghost:not(:disabled):hover {
    ============================================================ */
 .toolpath-container {
   width: 100%;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .toolpath-container canvas {
@@ -1271,10 +1693,17 @@ button.ghost:not(:disabled):hover {
    ============================================================ */
 .tab-bar {
   display: flex;
-  gap: var(--space-5);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
   margin: calc(var(--space-3) * -1) calc(var(--space-3) * -1) var(--space-3);
   padding: 0 var(--space-3);
+}
+
+.tab-bar-tabs {
+  display: flex;
+  gap: var(--space-5);
 }
 
 .tab-button {
@@ -1334,95 +1763,21 @@ button.ghost:not(:disabled):hover {
 }
 
 /* ============================================================
-   Settings modal
+   Settings / Plugins drawer content
    ============================================================ */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-5);
-}
-
-.modal-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  width: 100%;
-  max-width: 700px;
-  max-height: 85vh;
+.drawer-panel {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: var(--space-3);
 }
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-header h2 {
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.modal-body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.modal-sidebar {
-  width: 10rem;
-  flex-shrink: 0;
-  border-right: 1px solid var(--border);
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.modal-sidebar button {
-  justify-content: flex-start;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.modal-sidebar button:hover {
-  background: var(--surface-hover);
-}
-
-.modal-sidebar button.active {
-  background: var(--primary-soft);
-  color: var(--primary);
-}
-
-.modal-content {
-  flex: 1;
-  padding: var(--space-5);
-  overflow-y: auto;
-}
-
-.modal-content h3 {
+.drawer-content h3 {
   font-size: 1.0625rem;
   font-weight: 700;
   margin-bottom: var(--space-2);
 }
 
-.modal-content h4 {
+.drawer-content h4 {
   margin: var(--space-4) 0 var(--space-2);
   font: var(--text-section-title);
   color: var(--text-secondary);
@@ -1469,8 +1824,24 @@ code {
   font-size: 0.9375rem;
 }
 
+/* Installed-plugin cards: name + actions share one line, then a divider
+   before the meta/description, which are free to use the card's full width
+   instead of being squeezed into a narrow left column. */
+.plugin-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.plugin-card-title-row strong {
+  font-size: 0.9375rem;
+}
+
 .plugin-meta {
-  margin-top: var(--space-1);
+  margin-top: var(--space-3);
   font: var(--text-caption);
   color: var(--text-muted);
 }
@@ -1496,6 +1867,7 @@ code {
    ============================================================ */
 .switch-row {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   gap: var(--space-2);
   cursor: pointer;
@@ -1573,4 +1945,57 @@ code {
 
 .switch-on .switch-label {
   color: var(--success);
+}
+
+.switch-success.switch-on .switch-track {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+/* ============================================================
+   Short-viewport compaction
+   Below ~850px of available height, the Jog card's full-size numbers and
+   compass don't leave room for Z-Probe to fit without scrolling. Rather
+   than shrinking one or two values a lot, scale several related ones down
+   together by roughly the same ~80% so the card still reads as the same
+   design, just at a slightly smaller size - proportional, not patched.
+   ============================================================ */
+@media (max-height: 850px) {
+  :root {
+    --text-machine-value: 700 1.75rem/1 var(--font-mono);
+  }
+
+  .jog-control {
+    gap: var(--space-1);
+  }
+
+  .card-header {
+    padding: var(--space-1) var(--space-3);
+  }
+
+  .card-content {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-1);
+  }
+
+  .jog-compass {
+    grid-template-columns: repeat(3, 2.5rem);
+    grid-template-rows: repeat(3, 2.5rem);
+    gap: var(--space-1);
+  }
+
+  .jog-z-strip {
+    grid-template-rows: repeat(3, 2.5rem);
+    gap: var(--space-1);
+  }
+
+  .jog-btn {
+    font-size: 0.9375rem;
+  }
+
+  button,
+  input,
+  select {
+    height: 1.875rem;
+  }
 }

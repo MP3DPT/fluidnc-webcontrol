@@ -112,16 +112,8 @@ export function PluginCard({ plugin, send, onUninstall }: Props) {
 
   return (
     <div className="plugin-card">
-      <div className="plugin-card-header">
-        <div>
-          <strong>{manifest.name}</strong>
-          <p className="plugin-meta">
-            Version {manifest.version} · Author: {manifest.author} · ID: {manifest.id}
-          </p>
-          <p className="hint" style={{ margin: '0.2rem 0 0' }}>
-            {manifest.description}
-          </p>
-        </div>
+      <div className="plugin-card-title-row">
+        <strong>{manifest.name}</strong>
         <div className="plugin-card-actions">
           <button onClick={() => setConfiguring((v) => !v)}>
             {configuring ? <X size={14} /> : <Settings size={14} />}
@@ -134,6 +126,12 @@ export function PluginCard({ plugin, send, onUninstall }: Props) {
           />
         </div>
       </div>
+      <p className="plugin-meta">
+        Version {manifest.version} · Author: {manifest.author} · ID: {manifest.id}
+      </p>
+      <p className="hint" style={{ margin: '0.2rem 0 0' }}>
+        {manifest.description}
+      </p>
 
       {configuring && (
         <div className="plugin-card-body">

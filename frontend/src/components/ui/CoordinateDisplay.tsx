@@ -7,8 +7,8 @@ interface AxisValue {
 interface Props {
   axes: AxisValue[];
   unit?: string;
-  /** 'lg' for the primary work-position readout; 'sm' for a denser secondary line (e.g. machine coordinates). */
-  size?: 'sm' | 'lg';
+  /** 'lg' for the primary work-position readout; 'sm' for a denser secondary line; 'boxed' for a per-axis bordered card (Machine Status). */
+  size?: 'sm' | 'lg' | 'boxed';
 }
 
 /**
@@ -25,7 +25,7 @@ export function CoordinateDisplay({ axes, unit = 'mm', size = 'lg' }: Props) {
           <span className="coord-axis-label">{axis.label}</span>
           <span className="coord-axis-value">
             {axis.value === null ? '—' : axis.value.toFixed(axis.precision ?? 3)}
-            {axis.value !== null && size === 'lg' && <span className="coord-axis-unit">{unit}</span>}
+            {axis.value !== null && (size === 'lg' || size === 'boxed') && <span className="coord-axis-unit">{unit}</span>}
           </span>
         </div>
       ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Cable, RefreshCw } from 'lucide-react';
+import { Cable, CheckCircle2, CircleOff, Power, RefreshCw, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import type { PortInfo } from '../types';
 
@@ -22,6 +22,8 @@ export function ConnectPanel({ ports, connectionOpen, wsReady, send }: Props) {
   }, [ports, selectedPath]);
 
   const statusClass = !wsReady ? 'offline' : connectionOpen ? 'online' : 'warn';
+  const statusLabel = !wsReady ? 'Offline' : connectionOpen ? 'Connected' : 'Disconnected';
+  const StatusIcon = !wsReady ? XCircle : connectionOpen ? CheckCircle2 : CircleOff;
 
   return (
     <Card>
@@ -32,6 +34,7 @@ export function ConnectPanel({ ports, connectionOpen, wsReady, send }: Props) {
       <CardContent>
         <div className="row">
           <select
+            className="port-select"
             value={selectedPath}
             onChange={(e) => setSelectedPath(e.target.value)}
             disabled={connectionOpen}
@@ -43,12 +46,19 @@ export function ConnectPanel({ ports, connectionOpen, wsReady, send }: Props) {
               </option>
             ))}
           </select>
-          <button onClick={() => send({ type: 'listPorts' })}>
-            <RefreshCw size={14} />
-            Refresh
+          <button className="btn-square" onClick={() => send({ type: 'listPorts' })} aria-label="Refresh ports">
+            <RefreshCw size={15} />
           </button>
+        </div>
+
+        <div className="connection-status-row">
+          <span className={`connection-status ${statusClass}`}>
+            <StatusIcon size={15} />
+            {statusLabel}
+          </span>
           {connectionOpen ? (
             <button className="danger" onClick={() => send({ type: 'disconnect' })}>
+              <Power size={14} />
               Disconnect
             </button>
           ) : (
@@ -57,12 +67,13 @@ export function ConnectPanel({ ports, connectionOpen, wsReady, send }: Props) {
               disabled={!selectedPath}
               onClick={() => send({ type: 'connect', path: selectedPath, baud: 115200 })}
             >
+              <Power size={14} />
               Connect
             </button>
           )}
         </div>
+
         <p className="hint">
-          <span className={`status-dot ${statusClass}`} style={{ marginRight: '0.4rem' }} />
           Backend: {wsReady ? 'connected' : 'reconnecting…'} · Serial: {connectionOpen ? 'open' : 'closed'}
         </p>
       </CardContent>

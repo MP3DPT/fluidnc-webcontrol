@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Cpu, Power, RotateCw, Settings, PowerOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Maximize, Minimize, Power, RotateCw, PowerOff } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { IconButton } from './ui/IconButton';
 import { machineStateTone } from '../lib/machineState';
@@ -10,12 +10,27 @@ interface Props {
   connectionOpen: boolean;
   status: StatusReport | null;
   programRunning: boolean;
-  onOpenSettings: () => void;
   send: (message: Record<string, unknown>) => void;
 }
 
-export function Header({ wsReady, connectionOpen, status, programRunning, onOpenSettings, send }: Props) {
+export function Header({ wsReady, connectionOpen, status, programRunning, send }: Props) {
   const [powerOpen, setPowerOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // A dedicated machine controller running on its own screen has no
+  // business showing browser chrome - this is the one-click way there,
+  // tracked so the icon reflects reality even if fullscreen is left via
+  // Esc/F11 instead of the button itself.
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(document.fullscreenElement !== null);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  };
 
   // The one badge that's always visible regardless of scroll position -
   // the app's single Level-1 "is it safe, is it working" signal. Falls
@@ -36,10 +51,12 @@ export function Header({ wsReady, connectionOpen, status, programRunning, onOpen
     <header className="app-header">
       <div className="header-left">
         <span className="app-logo">
-          <Cpu size={20} strokeWidth={2} />
+          <img src="/logo.png" alt="" />
         </span>
-        <h1>fluidnc-webcontrol</h1>
-        <span className="tagline">free &amp; open source</span>
+        <div className="header-titles">
+          <h1>fluidnc-webcontrol</h1>
+          <span className="tagline">free &amp; open source</span>
+        </div>
       </div>
 
       <div className="header-right">
@@ -47,13 +64,15 @@ export function Header({ wsReady, connectionOpen, status, programRunning, onOpen
           MACHINE: {machineLabel}
         </Badge>
 
-        <IconButton onClick={onOpenSettings} aria-label="Settings">
-          <Settings size={17} />
-        </IconButton>
+        <div className="header-actions">
+          <IconButton onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
+            {isFullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
+          </IconButton>
 
-        <IconButton onClick={() => setPowerOpen((v) => !v)} aria-label="Power options">
-          <Power size={17} />
-        </IconButton>
+          <IconButton onClick={() => setPowerOpen((v) => !v)} aria-label="Power options">
+            <Power size={17} />
+          </IconButton>
+        </div>
         {powerOpen && (
           <div className="dropdown-panel right">
             <div className="row">
