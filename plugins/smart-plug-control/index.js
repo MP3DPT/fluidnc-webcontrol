@@ -45,12 +45,24 @@ class TuyaLocalDriver {
 
   async withDevice(action) {
     const device = new TuyAPI({ id: this.deviceId, key: this.localKey, ip: this.ip, version: this.protocolVersion });
+    // tuyapi emits its own 'error' events straight on the device/socket,
+    // independently of whether connect() itself has settled yet (e.g. an
+    // unreachable IP surfaces this way, not as a connect() rejection). An
+    // EventEmitter 'error' with no listener is fatal in Node - it throws
+    // and takes the whole process down, not just this plugin. Funnel it
+    // into the same rejection path as everything else here instead.
+    const deviceError = new Promise((_, reject) => {
+      device.on('error', (err) => reject(err instanceof Error ? err : new Error(String(err))));
+    });
     try {
       return await withTimeout(
-        (async () => {
-          await device.connect();
-          return action(device);
-        })(),
+        Promise.race([
+          (async () => {
+            await device.connect();
+            return action(device);
+          })(),
+          deviceError,
+        ]),
         `Smart plug at ${this.ip} did not respond within ${OPERATION_TIMEOUT_MS / 1000}s`,
       );
     } finally {
