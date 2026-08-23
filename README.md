@@ -48,13 +48,13 @@ Open the **Plugins** tab in the sidebar to:
 
 Shipped today:
 
-| Plugin | What it does |
-|---|---|
-| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM |
-| Notifications | Pushes alarms, job-completion, and connection-loss events to ntfy.sh, Discord, or Telegram |
-| Smart Plug Control | Turns the spindle's smart plug on before a job (with a spin-up delay) and off after, regardless of how the job ended |
-| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen |
-| Z-Probe \| Touch Plate | Touch-plate Z probing with plate-thickness correction |
+| Plugin | What it does | Setup |
+|---|---|---|
+| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM | [Needs `gpiod`](plugins/fan-shim-control/README.md) |
+| Notifications | Pushes alarms, job-completion, and connection-loss events to ntfy.sh, Discord, or Telegram | [Needs a provider account](plugins/notifications/README.md) |
+| Smart Plug Control | Turns the spindle's smart plug on before a job (with a spin-up delay) and off after, regardless of how the job ended | [Needs a one-time Tuya key extraction](plugins/smart-plug-control/README.md) |
+| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen | [Needs `ffmpeg` + `v4l-utils`](plugins/webcam-preview/README.md) |
+| Z-Probe \| Touch Plate | Touch-plate Z probing with plate-thickness correction | None — just enter your plate's dimensions |
 
 Writing your own: a plugin gets a `PluginContext` — the serial connection, the program runner, its own settings store, `registerBeforeRun`/`registerAction` hooks, and its own Express router under `/api/plugins/<id>`. Any folder under [`plugins/`](plugins) is a working example; `backend/src/plugins/types.ts` has the exact interface.
 
