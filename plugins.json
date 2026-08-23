@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    {
+      "id": "webcam-preview",
+      "name": "Webcam Preview",
+      "version": "0.1.0",
+      "author": "fluidnc-webcontrol",
+      "description": "Live preview for one or more webcams - USB cameras on the Pi, or IP cameras on your network - shown on the main screen.",
+      "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/webcam-preview.zip"
+    }
+  ]
+}

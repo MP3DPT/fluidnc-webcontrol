@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Download, Upload } from 'lucide-react';
 import type { PluginInfo } from '../types';
 import { PluginCard } from './PluginCard';
 
@@ -8,28 +8,76 @@ interface Props {
   send: (message: Record<string, unknown>) => void;
 }
 
+interface AvailablePlugin {
+  id: string;
+  name: string;
+  version: string;
+  author: string;
+  description: string;
+  download: string;
+}
+
+// The community index - anyone can browse/install what's listed here without
+// leaving the app. Points at MP3DPT's own repo for now (see the About page's
+// "Roadmap & contributing" note); not an open marketplace anyone can submit
+// to, since a plugin runs with full access to the app once installed.
+const PLUGIN_INDEX_URL = 'https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins.json';
+
 /** Install/list/uninstall - plugin management, not the per-plugin dashboard widgets (see PluginPanels). */
 export function PluginsManagerPanel({ plugins, send }: Props) {
   const [installing, setInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const installPlugin = async (file: File) => {
+  const [available, setAvailable] = useState<AvailablePlugin[]>([]);
+  const [browseError, setBrowseError] = useState<string | null>(null);
+  const [browseLoading, setBrowseLoading] = useState(true);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(PLUGIN_INDEX_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Index fetch failed (${res.status})`);
+        return res.json();
+      })
+      .then((data) => setAvailable(data.plugins ?? []))
+      .catch((err) => setBrowseError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setBrowseLoading(false));
+  }, []);
+
+  const installZip = async (body: ArrayBuffer) => {
+    const res = await fetch('/api/plugins/install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/zip' },
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error ?? 'Install failed');
+  };
+
+  const installFromFile = async (file: File) => {
     setInstalling(true);
     setInstallError(null);
     try {
-      const body = await file.arrayBuffer();
-      const res = await fetch('/api/plugins/install', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/zip' },
-        body,
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error ?? 'Install failed');
+      await installZip(await file.arrayBuffer());
     } catch (err) {
       setInstallError(err instanceof Error ? err.message : String(err));
     } finally {
       setInstalling(false);
+    }
+  };
+
+  const installFromIndex = async (entry: AvailablePlugin) => {
+    setInstallingId(entry.id);
+    setInstallError(null);
+    try {
+      const res = await fetch(entry.download);
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      await installZip(await res.arrayBuffer());
+    } catch (err) {
+      setInstallError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setInstallingId(null);
     }
   };
 
@@ -44,18 +92,21 @@ export function PluginsManagerPanel({ plugins, send }: Props) {
     }
   };
 
+  const installedIds = new Set(plugins.map((p) => p.manifest.id));
+  const browsable = available.filter((entry) => !installedIds.has(entry.id));
+
   return (
     <div className="drawer-panel">
       <p className="hint">
-        Extend fluidnc-webcontrol with plugins. Anyone can build one and share it as a .zip - install it below.
-        Plugins run with full access to the app, the same as any Node package you'd install yourself, so only
-        install plugins you trust.
+        Extend fluidnc-webcontrol with plugins. Browse what's available below, or install your own - anyone can
+        build one and share it as a .zip. Plugins run with full access to the app, the same as any Node package
+        you'd install yourself, so only install plugins you trust.
       </p>
 
       <div className="row">
         <button className="primary" disabled={installing} onClick={() => fileInputRef.current?.click()}>
           <Upload size={15} />
-          {installing ? 'Installing…' : 'Install Plugin'}
+          {installing ? 'Installing…' : 'Install from .zip'}
         </button>
       </div>
       {installError && (
@@ -77,10 +128,43 @@ export function PluginsManagerPanel({ plugins, send }: Props) {
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) installPlugin(file);
+          if (file) installFromFile(file);
           e.target.value = '';
         }}
       />
+
+      <div className="settings-section">
+        <h4>Browse</h4>
+        {browseLoading && <p className="hint">Loading available plugins…</p>}
+        {browseError && (
+          <p className="hint" style={{ color: 'var(--danger)' }}>
+            Couldn't reach the plugin index: {browseError}
+          </p>
+        )}
+        {!browseLoading && !browseError && browsable.length === 0 && (
+          <p className="hint">Nothing new to install - you already have everything in the index.</p>
+        )}
+
+        {browsable.map((entry) => (
+          <div className="plugin-card" key={entry.id}>
+            <div className="plugin-card-title-row">
+              <strong>{entry.name}</strong>
+              <div className="plugin-card-actions">
+                <button disabled={installingId === entry.id} onClick={() => installFromIndex(entry)}>
+                  <Download size={14} />
+                  {installingId === entry.id ? 'Installing…' : 'Install'}
+                </button>
+              </div>
+            </div>
+            <p className="plugin-meta">
+              Version {entry.version} · Author: {entry.author} · ID: {entry.id}
+            </p>
+            <p className="hint" style={{ margin: '0.2rem 0 0' }}>
+              {entry.description}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
