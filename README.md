@@ -43,8 +43,8 @@ The command queue in `backend/src/serial/connection.ts` sends one line and waits
 Anything FluidNC can't know about your specific shop — a cooling fan, a phone notification, a smart plug wired to the spindle, a webcam — lives in a plugin instead of the core app. A plugin is just a folder with a `plugin.json` manifest and an entry module, loaded from `~/.fluidnc-webcontrol/plugins` at runtime (see `backend/src/plugins/loader.ts`); installing one is a normal in-app action, no rebuild or restart needed.
 
 Open the **Plugins** tab in the sidebar to:
-- **Browse** what's available — the app fetches [`plugins.json`](plugins.json) from this repo and lists anything you don't already have installed, one click to install.
-- **Install from a `.zip`** manually, for a plugin you built yourself or got somewhere else.
+- **Browse** what's available — the app fetches [`plugins.json`](plugins.json) from this repo and lists anything you don't already have installed, one click to install. This needs the Pi to have internet access, since it's reaching out to GitHub.
+- **Install from a `.zip`** manually, for a plugin you built yourself, got somewhere else, or grabbed on another device — this works with no internet at all, which matters since running the CNC itself (jogging, streaming G-code) never needs internet either, only a local network between the Pi and your browser. If Browse can't reach the index, the app tells you so and points at this instead.
 
 Shipped today:
 
