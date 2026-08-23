@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { DATA_DIR } from '../dataDir.js';
 
 export interface Folder {
   id: string;
@@ -34,7 +34,7 @@ interface LibraryIndex {
 // Stored outside the deployable project tree (which gets overwritten on
 // every deploy) so the library survives redeploys as well as reboots -
 // same convention as SettingsStore and the plugin install directory.
-const LIBRARY_DIR = join(homedir(), '.fluidnc-webcontrol', 'gcode-library');
+const LIBRARY_DIR = join(DATA_DIR, 'gcode-library');
 const INDEX_PATH = join(LIBRARY_DIR, 'index.json');
 
 function gcodePath(id: string): string {

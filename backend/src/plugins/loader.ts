@@ -1,8 +1,8 @@
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join } from 'node:path';
-import { homedir } from 'node:os';
 import { pathToFileURL } from 'node:url';
+import { DATA_DIR } from '../dataDir.js';
 import AdmZip from 'adm-zip';
 import { Router, type Express } from 'express';
 import type { FluidNCConnection } from '../serial/connection.js';
@@ -13,7 +13,7 @@ import type { FluidNCPluginModule, PluginContext, PluginManifest, SettingsSchema
 // Outside the deployable project tree (which gets overwritten on every
 // redeploy) so installed plugins survive redeploys as well as reboots -
 // same reasoning as settings.json living here.
-const PLUGINS_DIR = join(homedir(), '.fluidnc-webcontrol', 'plugins');
+const PLUGINS_DIR = join(DATA_DIR, 'plugins');
 
 // systemd (and other service managers) run this process with a minimal PATH
 // that doesn't include npm's directory, even though it includes node's -

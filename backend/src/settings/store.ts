@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { DATA_DIR } from '../dataDir.js';
 
 export interface GeneralSettings {
   /** When a Console line is a feed move (G1/G2/G3) with no F word of its own, append consoleDefaultFeed instead of letting FluidNC reject it as "undefined feed rate". */
@@ -27,7 +27,7 @@ const ZPROBE_PLUGIN_ID = 'zprobe-touchplate';
 
 // Stored outside the deployable project tree (which gets overwritten on
 // every deploy) so settings survive redeploys as well as reboots.
-const SETTINGS_PATH = join(homedir(), '.fluidnc-webcontrol', 'settings.json');
+const SETTINGS_PATH = join(DATA_DIR, 'settings.json');
 
 /**
  * Persists user settings (probe thickness, feed rates, and every
