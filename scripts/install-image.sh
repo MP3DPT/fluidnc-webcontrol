@@ -57,8 +57,12 @@ NODE_BIN="$(command -v node)"
 echo "==> Using node at $NODE_BIN"
 
 echo "==> Creating system account '$SERVICE_USER'"
+# --home-dir points at the data dir (created below) rather than a real login
+# home - npm still needs *some* writable $HOME to put its cache/logs in when
+# the plugin loader shells out to `npm install` for a bundled plugin's own
+# dependencies (e.g. smart-plug-control's tuyapi) at startup.
 if ! id "$SERVICE_USER" >/dev/null 2>&1; then
-  useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER"
+  useradd --system --no-create-home --home-dir "$DATA_DIR" --shell /usr/sbin/nologin "$SERVICE_USER"
 fi
 usermod -a -G dialout,video "$SERVICE_USER"
 

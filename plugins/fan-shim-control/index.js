@@ -73,13 +73,27 @@ class FanGpio {
 
 export function activate(ctx) {
   const fan = new FanGpio();
-  fan.set(false); // known-safe starting state regardless of whatever held the pin before
+  // Not fan.set(false) here - this plugin ships enabled or not regardless of
+  // whether the hardware is actually present, and touching GPIO18/spawning
+  // gpioset on a Pi with no Fan SHIM attached just spams failed-holder
+  // errors forever. Nothing touches the pin until the config says to.
+  let wasEnabled = false;
 
   const timer = setInterval(() => {
     try {
-      fan.ensure();
       const config = ctx.settings.get();
-      if (!config.enabled) return;
+      if (!config.enabled) {
+        if (wasEnabled) {
+          fan.stop(); // release the GPIO holder rather than leave it running disabled
+          wasEnabled = false;
+        }
+        return;
+      }
+      if (!wasEnabled) {
+        fan.set(false); // known-safe starting state regardless of whatever held the pin before
+        wasEnabled = true;
+      }
+      fan.ensure();
       const onThreshold = Number(config.onThreshold) || 65;
       const offThreshold = Number(config.offThreshold) || 55;
       const tempC = readCpuTempC();
