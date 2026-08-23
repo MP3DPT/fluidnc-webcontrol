@@ -232,7 +232,20 @@ export function activate(ctx) {
   const appliedFocus = new Map(); // slot -> last-applied "device|autoFocus|focusValue", to avoid re-issuing v4l2-ctl every tick
 
   const reconcile = () => {
-    const cameras = readSlots(ctx.settings.get());
+    const config = ctx.settings.get();
+    if (!config.enabled) {
+      // Master toggle off - readSlots() only reflects each camera's own
+      // enabled flag (camera1Enabled defaults to true), so without this
+      // check a disabled plugin still spawns ffmpeg for any default-enabled
+      // slot. Tear down anything already running and touch nothing further.
+      for (const [slot, stream] of streams) {
+        stream.stop();
+        streams.delete(slot);
+        appliedFocus.delete(slot);
+      }
+      return;
+    }
+    const cameras = readSlots(config);
     const wantedUsb = new Map(cameras.filter((c) => c.source === 'usb').map((c) => [c.slot, c]));
 
     for (const [slot, stream] of streams) {
