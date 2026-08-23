@@ -1,0 +1,8 @@
+{
+  "id": "fan-shim-control",
+  "name": "Fan SHIM Control",
+  "version": "0.1.0",
+  "author": "fluidnc-webcontrol",
+  "description": "Automatic temperature-based fan control for the Pimoroni Fan SHIM, with configurable on/off thresholds.",
+  "entry": "index.js"
+}

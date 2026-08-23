@@ -7,6 +7,38 @@
       "author": "fluidnc-webcontrol",
       "description": "Live preview for one or more webcams - USB cameras on the Pi, or IP cameras on your network - shown on the main screen.",
       "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/webcam-preview.zip"
+    },
+    {
+      "id": "fan-shim-control",
+      "name": "Fan SHIM Control",
+      "version": "0.1.0",
+      "author": "fluidnc-webcontrol",
+      "description": "Automatic temperature-based fan control for the Pimoroni Fan SHIM, with configurable on/off thresholds.",
+      "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/fan-shim-control.zip"
+    },
+    {
+      "id": "notifications",
+      "name": "Notifications",
+      "version": "0.1.0",
+      "author": "fluidnc-webcontrol",
+      "description": "Push notifications for machine events (alarms, job completion, connection loss) via ntfy.sh, Discord, or Telegram.",
+      "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/notifications.zip"
+    },
+    {
+      "id": "smart-plug-control",
+      "name": "Smart Plug Control",
+      "version": "0.1.0",
+      "author": "fluidnc-webcontrol",
+      "description": "Turn the spindle's smart plug on before a job (with a spin-up delay) and off after - regardless of how the job ended.",
+      "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/smart-plug-control.zip"
+    },
+    {
+      "id": "zprobe-touchplate",
+      "name": "Z-Probe | Touch Plate",
+      "version": "0.1.0",
+      "author": "fluidnc-webcontrol",
+      "description": "Touch-plate Z probing - probes down, zeros work Z corrected for the plate's thickness, then retracts clear. Bundled as a plugin (rather than a core feature) since Z-probe hardware varies a lot - swap this out for a different plugin if yours works differently.",
+      "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/zprobe-touchplate.zip"
     }
   ]
 }

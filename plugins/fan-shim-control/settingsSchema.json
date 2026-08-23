@@ -1,0 +1,19 @@
+{
+  "fields": [
+    {
+      "type": "hint",
+      "text": "Drives the Pimoroni Fan SHIM's fan directly over GPIO18 using the gpiod command-line tools already installed on Raspberry Pi OS - no Python or fanshim package needed. Reads CPU temperature from /sys/class/thermal/thermal_zone0/temp every few seconds."
+    },
+    { "key": "onThreshold", "type": "number", "label": "Turn on at", "unit": "°C", "default": 65 },
+    { "key": "offThreshold", "type": "number", "label": "Turn off at", "unit": "°C", "default": 55 },
+    {
+      "type": "hint",
+      "text": "Keep \"Turn off at\" comfortably below \"Turn on at\" - that gap (hysteresis) is what stops the fan rapidly clicking on and off right at one temperature."
+    }
+  ],
+  "actions": [
+    { "id": "check-now", "label": "Check Temp & Fan State" },
+    { "id": "test-on", "label": "Test: Force Fan On" },
+    { "id": "test-off", "label": "Test: Force Fan Off" }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "smart-plug-control",
+  "name": "Smart Plug Control",
+  "version": "0.1.0",
+  "author": "fluidnc-webcontrol",
+  "description": "Turn the spindle's smart plug on before a job (with a spin-up delay) and off after - regardless of how the job ended.",
+  "entry": "index.js"
+}

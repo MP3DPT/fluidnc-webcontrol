@@ -1,0 +1,8 @@
+{
+  "id": "notifications",
+  "name": "Notifications",
+  "version": "0.1.0",
+  "author": "fluidnc-webcontrol",
+  "description": "Push notifications for machine events (alarms, job completion, connection loss) via ntfy.sh, Discord, or Telegram.",
+  "entry": "index.js"
+}
