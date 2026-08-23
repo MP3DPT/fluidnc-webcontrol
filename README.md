@@ -6,6 +6,10 @@ A free, open-source (MIT), community-driven web control UI for [FluidNC](https:/
 
 This project is an independent community effort and is not affiliated with or endorsed by the FluidNC project, Bart Dring, or any controller manufacturer.
 
+| Main screen | File Manager | Plugins |
+|---|---|---|
+| ![Main screen](docs/screenshots/main-screen.png) | ![File Manager](docs/screenshots/file-manager.png) | ![Plugins](docs/screenshots/plugins.png) |
+
 ## Why this exists
 
 Existing FluidNC senders fall into two camps:
