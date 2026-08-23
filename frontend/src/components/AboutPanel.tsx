@@ -4,7 +4,7 @@ import { Coffee } from 'lucide-react';
 export function AboutPanel() {
   return (
     <div className="drawer-panel">
-      <h3>fluidnc-webcontrol v0.1.0</h3>
+      <h3>fluidnc-webcontrol v0.2.0</h3>
       <p className="hint">
         A free, open-source web control interface for FluidNC CNC controllers - jog, stream G-code, probe, and
         monitor a machine from any browser on the network.

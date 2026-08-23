@@ -129,7 +129,7 @@ export default function App() {
           { key: 'settings', icon: <SettingsIcon size={22} />, label: 'Settings' },
         ]}
         footerItems={[{ key: 'about', icon: <Info size={22} />, label: 'About' }]}
-        version="v0.1.0"
+        version="v0.2.0"
         active={activePanel}
         onSelect={(key) => setActivePanel((prev) => (prev === key ? null : key))}
       />
