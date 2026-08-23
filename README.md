@@ -10,6 +10,12 @@ This project is an independent community effort and is not affiliated with or en
 |---|---|---|
 | ![Main screen](docs/screenshots/main-screen.png) | ![File Manager](docs/screenshots/file-manager.png) | ![Plugins](docs/screenshots/plugins.png) |
 
+## Demo
+
+![Demo: connect, browse the sidebar, load a job, and run it on real FluidNC hardware](docs/screenshots/demo.gif)
+
+Connecting to a real PiBot V4.96 PRO, a tour of the sidebar (Files, Plugins, Settings, About), loading a G-code file, and streaming it start to finish — live toolpath, live coordinates, live machine state, all against actual hardware. The "Job Complete" toast at the end is a UI mockup of what a push notification looks like, not a live-tested send — the Notifications plugin needs a provider (ntfy.sh, Discord, or Telegram) configured for that to fire for real.
+
 ## Why this exists
 
 Existing FluidNC senders fall into two camps:
