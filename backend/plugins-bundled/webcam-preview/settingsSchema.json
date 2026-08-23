@@ -1,0 +1,80 @@
+{
+  "fields": [
+    {
+      "type": "hint",
+      "text": "Add up to 4 cameras - USB webcams plugged into the Pi, or IP cameras on your network that already serve an MJPEG stream URL. Each enabled camera gets its own tile in the panel below Actions on the main screen."
+    },
+
+    { "key": "camera1Enabled", "type": "checkbox", "label": "Camera 1 enabled", "default": false },
+    { "key": "camera1Name", "type": "text", "label": "Name", "default": "Camera 1", "showIf": { "camera1Enabled": true } },
+    {
+      "key": "camera1Source", "type": "select", "label": "Source", "default": "usb", "showIf": { "camera1Enabled": true },
+      "options": [{ "value": "usb", "label": "USB webcam (on this Pi)" }, { "value": "ip-mjpeg", "label": "IP camera (MJPEG URL)" }]
+    },
+    { "key": "camera1Device", "type": "text", "label": "Device path", "placeholder": "/dev/video0", "default": "/dev/video0", "showIf": { "camera1Enabled": true, "camera1Source": "usb" } },
+    {
+      "key": "camera1Resolution", "type": "select", "label": "Resolution", "default": "1280x720", "showIf": { "camera1Enabled": true, "camera1Source": "usb" },
+      "options": [{ "value": "640x480", "label": "640x480 (lower quality, less bandwidth)" }, { "value": "1280x720", "label": "1280x720 (recommended)" }, { "value": "1920x1080", "label": "1920x1080 (highest quality, more bandwidth)" }]
+    },
+    { "key": "camera1AutoFocus", "type": "checkbox", "label": "Autofocus", "default": true, "showIf": { "camera1Enabled": true, "camera1Source": "usb" } },
+    { "key": "camera1FocusValue", "type": "number", "label": "Manual focus", "default": 30, "showIf": { "camera1Enabled": true, "camera1Source": "usb", "camera1AutoFocus": false } },
+    { "key": "camera1Url", "type": "text", "label": "Stream URL", "placeholder": "http://192.168.1.50/video", "default": "", "showIf": { "camera1Enabled": true, "camera1Source": "ip-mjpeg" } },
+
+    { "key": "camera2Enabled", "type": "checkbox", "label": "Camera 2 enabled", "default": false },
+    { "key": "camera2Name", "type": "text", "label": "Name", "default": "Camera 2", "showIf": { "camera2Enabled": true } },
+    {
+      "key": "camera2Source", "type": "select", "label": "Source", "default": "usb", "showIf": { "camera2Enabled": true },
+      "options": [{ "value": "usb", "label": "USB webcam (on this Pi)" }, { "value": "ip-mjpeg", "label": "IP camera (MJPEG URL)" }]
+    },
+    { "key": "camera2Device", "type": "text", "label": "Device path", "placeholder": "/dev/video0", "default": "/dev/video0", "showIf": { "camera2Enabled": true, "camera2Source": "usb" } },
+    {
+      "key": "camera2Resolution", "type": "select", "label": "Resolution", "default": "1280x720", "showIf": { "camera2Enabled": true, "camera2Source": "usb" },
+      "options": [{ "value": "640x480", "label": "640x480 (lower quality, less bandwidth)" }, { "value": "1280x720", "label": "1280x720 (recommended)" }, { "value": "1920x1080", "label": "1920x1080 (highest quality, more bandwidth)" }]
+    },
+    { "key": "camera2AutoFocus", "type": "checkbox", "label": "Autofocus", "default": true, "showIf": { "camera2Enabled": true, "camera2Source": "usb" } },
+    { "key": "camera2FocusValue", "type": "number", "label": "Manual focus", "default": 30, "showIf": { "camera2Enabled": true, "camera2Source": "usb", "camera2AutoFocus": false } },
+    { "key": "camera2Url", "type": "text", "label": "Stream URL", "placeholder": "http://192.168.1.50/video", "default": "", "showIf": { "camera2Enabled": true, "camera2Source": "ip-mjpeg" } },
+
+    { "key": "camera3Enabled", "type": "checkbox", "label": "Camera 3 enabled", "default": false },
+    { "key": "camera3Name", "type": "text", "label": "Name", "default": "Camera 3", "showIf": { "camera3Enabled": true } },
+    {
+      "key": "camera3Source", "type": "select", "label": "Source", "default": "usb", "showIf": { "camera3Enabled": true },
+      "options": [{ "value": "usb", "label": "USB webcam (on this Pi)" }, { "value": "ip-mjpeg", "label": "IP camera (MJPEG URL)" }]
+    },
+    { "key": "camera3Device", "type": "text", "label": "Device path", "placeholder": "/dev/video0", "default": "/dev/video0", "showIf": { "camera3Enabled": true, "camera3Source": "usb" } },
+    {
+      "key": "camera3Resolution", "type": "select", "label": "Resolution", "default": "1280x720", "showIf": { "camera3Enabled": true, "camera3Source": "usb" },
+      "options": [{ "value": "640x480", "label": "640x480 (lower quality, less bandwidth)" }, { "value": "1280x720", "label": "1280x720 (recommended)" }, { "value": "1920x1080", "label": "1920x1080 (highest quality, more bandwidth)" }]
+    },
+    { "key": "camera3AutoFocus", "type": "checkbox", "label": "Autofocus", "default": true, "showIf": { "camera3Enabled": true, "camera3Source": "usb" } },
+    { "key": "camera3FocusValue", "type": "number", "label": "Manual focus", "default": 30, "showIf": { "camera3Enabled": true, "camera3Source": "usb", "camera3AutoFocus": false } },
+    { "key": "camera3Url", "type": "text", "label": "Stream URL", "placeholder": "http://192.168.1.50/video", "default": "", "showIf": { "camera3Enabled": true, "camera3Source": "ip-mjpeg" } },
+
+    { "key": "camera4Enabled", "type": "checkbox", "label": "Camera 4 enabled", "default": false },
+    { "key": "camera4Name", "type": "text", "label": "Name", "default": "Camera 4", "showIf": { "camera4Enabled": true } },
+    {
+      "key": "camera4Source", "type": "select", "label": "Source", "default": "usb", "showIf": { "camera4Enabled": true },
+      "options": [{ "value": "usb", "label": "USB webcam (on this Pi)" }, { "value": "ip-mjpeg", "label": "IP camera (MJPEG URL)" }]
+    },
+    { "key": "camera4Device", "type": "text", "label": "Device path", "placeholder": "/dev/video0", "default": "/dev/video0", "showIf": { "camera4Enabled": true, "camera4Source": "usb" } },
+    {
+      "key": "camera4Resolution", "type": "select", "label": "Resolution", "default": "1280x720", "showIf": { "camera4Enabled": true, "camera4Source": "usb" },
+      "options": [{ "value": "640x480", "label": "640x480 (lower quality, less bandwidth)" }, { "value": "1280x720", "label": "1280x720 (recommended)" }, { "value": "1920x1080", "label": "1920x1080 (highest quality, more bandwidth)" }]
+    },
+    { "key": "camera4AutoFocus", "type": "checkbox", "label": "Autofocus", "default": true, "showIf": { "camera4Enabled": true, "camera4Source": "usb" } },
+    { "key": "camera4FocusValue", "type": "number", "label": "Manual focus", "default": 30, "showIf": { "camera4Enabled": true, "camera4Source": "usb", "camera4AutoFocus": false } },
+    { "key": "camera4Url", "type": "text", "label": "Stream URL", "placeholder": "http://192.168.1.50/video", "default": "", "showIf": { "camera4Enabled": true, "camera4Source": "ip-mjpeg" } },
+
+    {
+      "type": "hint",
+      "text": "Focus is only available for USB webcams that support it (like the Logitech StreamCam) - if the fields don't seem to do anything, your camera likely has a fixed-focus lens."
+    },
+    {
+      "type": "hint",
+      "text": "Not sure which /dev/videoN is your camera? Use \"List USB Cameras\" below - USB webcams often expose more than one device node, only one of which actually captures video."
+    }
+  ],
+  "actions": [
+    { "id": "list-usb-cameras", "label": "List USB Cameras" }
+  ]
+}

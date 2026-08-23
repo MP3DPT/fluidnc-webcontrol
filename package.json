@@ -1,0 +1,18 @@
+{
+  "name": "fluidnc-webcontrol",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Free, open-source, community-driven web control UI for FluidNC CNC controllers.",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w backend",
+    "build:backend": "npm run build -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build:frontend": "npm run build -w frontend",
+    "start": "npm run build:frontend && npm run build:backend && npm run start -w backend"
+  },
+  "license": "MIT"
+}

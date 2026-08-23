@@ -1,0 +1,28 @@
+{
+  "name": "fluidnc-webcontrol-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@serialport/parser-readline": "^12.0.0",
+    "adm-zip": "^0.5.16",
+    "express": "^4.19.2",
+    "serialport": "^12.0.0",
+    "tuyapi": "^7.7.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.5",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

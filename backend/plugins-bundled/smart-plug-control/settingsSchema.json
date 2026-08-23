@@ -1,0 +1,53 @@
+{
+  "fields": [
+    {
+      "key": "driver",
+      "type": "select",
+      "label": "Driver",
+      "default": "none",
+      "options": [
+        { "value": "none", "label": "None selected" },
+        { "value": "tuya-local", "label": "Tuya (local network)" }
+      ]
+    },
+    {
+      "type": "hint",
+      "text": "Many white-label plugs (including SPC's) are Tuya devices. Local control needs the device's IP, Device ID, and Local Key - the Local Key requires a one-time extraction via Tuya's IoT platform (e.g. tinytuya's wizard); this app can't do that step for you.",
+      "showIf": { "driver": "tuya-local" }
+    },
+    {
+      "type": "hint",
+      "text": "That extraction step talks to Tuya's cloud, so it needs your IoT Platform project's Data Center region to match your account's region (e.g. Western Europe, Central Europe, Americas, Eastern America, China, India) - pick the wrong one and the wizard's QR code will just keep expiring. This only matters for that one-time setup; once you have IP/Device ID/Local Key here, the app talks to the plug directly over your LAN and never touches Tuya's cloud again.",
+      "showIf": { "driver": "tuya-local" }
+    },
+    { "key": "ip", "type": "text", "label": "IP address", "placeholder": "192.168.1.50", "default": "", "showIf": { "driver": "tuya-local" } },
+    { "key": "deviceId", "type": "text", "label": "Device ID", "default": "", "showIf": { "driver": "tuya-local" } },
+    { "key": "localKey", "type": "password", "label": "Local key", "default": "", "showIf": { "driver": "tuya-local" } },
+    {
+      "key": "protocolVersion",
+      "type": "select",
+      "label": "Protocol version",
+      "default": "3.3",
+      "showIf": { "driver": "tuya-local" },
+      "options": [
+        { "value": "3.1", "label": "3.1" },
+        { "value": "3.3", "label": "3.3 (most common)" },
+        { "value": "3.4", "label": "3.4" },
+        { "value": "3.5", "label": "3.5" }
+      ]
+    },
+    {
+      "type": "hint",
+      "text": "If Test times out (\"Timeout waiting for status response\"), it's almost always this - try the other version values.",
+      "showIf": { "driver": "tuya-local" }
+    },
+    { "key": "spinUpSeconds", "type": "number", "label": "Spin-up delay", "unit": "s", "default": 4 },
+    { "key": "autoStart", "type": "checkbox", "label": "Turn on before running a job", "default": true },
+    { "key": "autoStop", "type": "checkbox", "label": "Turn off when the job ends (always, regardless of how it ended)", "default": true },
+    { "key": "autoReturnToOrigin", "type": "checkbox", "label": "Return to X0 Y0 - only on a clean completion", "default": true }
+  ],
+  "actions": [
+    { "id": "test-on", "label": "Test: Turn On", "enabledIf": { "driver": "tuya-local" } },
+    { "id": "test-off", "label": "Test: Turn Off", "enabledIf": { "driver": "tuya-local" } }
+  ]
+}

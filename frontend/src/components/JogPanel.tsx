@@ -1,0 +1,200 @@
+import { useEffect, useState } from 'react';
+import { ArrowDownLeft, ArrowDownRight, ArrowUp, ArrowUpLeft, ArrowUpRight, ArrowDown, LocateFixed, Move } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { CoordinateDisplay } from './ui/CoordinateDisplay';
+import { Divider } from './ui/Divider';
+import type { Position } from '../types';
+
+const STEP_SIZES = [0.1, 1, 10, 50];
+
+// CNCjs convention: arrows for X/Y, Page Up/Down for Z.
+const KEY_JOG_MAP: Record<string, { X?: number; Y?: number; Z?: number }> = {
+  ArrowUp: { Y: 1 },
+  ArrowDown: { Y: -1 },
+  ArrowLeft: { X: -1 },
+  ArrowRight: { X: 1 },
+  PageUp: { Z: 1 },
+  PageDown: { Z: -1 },
+};
+
+interface Props {
+  disabled: boolean;
+  workPosition: Position | null;
+  send: (message: Record<string, unknown>) => void;
+}
+
+export function JogPanel({ disabled, workPosition, send }: Props) {
+  const [step, setStep] = useState(1);
+  const [feedrate, setFeedrate] = useState(1000);
+
+  const jog = (deltas: { X?: number; Y?: number; Z?: number }) => send({ type: 'jog', deltas, feedrate });
+  const gcode = (line: string) => send({ type: 'gcode', line });
+  const zero = (axis: 'X' | 'Y' | 'Z') => gcode(`G10 L20 P1 ${axis}0`);
+
+  // Keyboard jogging, matching CNCjs - only while connected, and never
+  // while focus is in a text field/select (which need arrow keys for their
+  // own normal behavior, e.g. incrementing a number input).
+  useEffect(() => {
+    if (disabled) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      const unit = KEY_JOG_MAP[e.key];
+      if (!unit) return;
+
+      e.preventDefault();
+      const deltas: { X?: number; Y?: number; Z?: number } = {};
+      if (unit.X) deltas.X = unit.X * step;
+      if (unit.Y) deltas.Y = unit.Y * step;
+      if (unit.Z) deltas.Z = unit.Z * step;
+      jog(deltas);
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // "ok" for a $J= line means accepted, not finished - holding a key
+      // sends jog commands faster than they physically execute, so on
+      // release we must explicitly flush FluidNC's own jog buffer or it
+      // keeps moving for a few seconds on its own.
+      if (!KEY_JOG_MAP[e.key]) return;
+      send({ type: 'jogCancel' });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled, step, feedrate]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <Move size={14} />
+        Jog
+      </CardHeader>
+      <CardContent>
+        <div>
+          <span className="jog-axis-tag" style={{ textAlign: 'left', marginBottom: '0.4rem' }}>
+            Work position
+          </span>
+          <CoordinateDisplay
+            axes={[
+              { label: 'X', value: workPosition?.x ?? null },
+              { label: 'Y', value: workPosition?.y ?? null },
+              { label: 'Z', value: workPosition?.z ?? null },
+            ]}
+          />
+        </div>
+
+        <Divider />
+
+        <div className="row">
+          <label>
+            Step
+            <select value={step} onChange={(e) => setStep(Number(e.target.value))}>
+              {STEP_SIZES.map((s) => (
+                <option key={s} value={s}>
+                  {s} mm
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Feed
+            <span className="field-row">
+              <input
+                type="number"
+                value={feedrate}
+                min={1}
+                onChange={(e) => setFeedrate(Number(e.target.value))}
+              />
+              <span>mm/min</span>
+            </span>
+          </label>
+        </div>
+
+        <div className="jog-control">
+          <div className="jog-cluster">
+            <div>
+              <span className="jog-axis-tag">X / Y</span>
+              <div className="jog-compass">
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: -step, Y: step })} aria-label="Jog X- Y+">
+                  <ArrowUpLeft size={15} />
+                </button>
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ Y: step })} aria-label="Jog Y+">
+                  <ArrowUp size={16} />
+                </button>
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: step, Y: step })} aria-label="Jog X+ Y+">
+                  <ArrowUpRight size={15} />
+                </button>
+
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: -step })} aria-label="Jog X-">
+                  X-
+                </button>
+                <button
+                  className="jog-btn jog-hub"
+                  disabled={disabled}
+                  title="Rapid to work X0 Y0"
+                  onClick={() => gcode('G90 G0 X0 Y0')}
+                >
+                  0,0
+                </button>
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: step })} aria-label="Jog X+">
+                  X+
+                </button>
+
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: -step, Y: -step })} aria-label="Jog X- Y-">
+                  <ArrowDownLeft size={15} />
+                </button>
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ Y: -step })} aria-label="Jog Y-">
+                  <ArrowDown size={16} />
+                </button>
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ X: step, Y: -step })} aria-label="Jog X+ Y-">
+                  <ArrowDownRight size={15} />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <span className="jog-axis-tag">Z</span>
+              <div className="jog-z-strip">
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ Z: step })} aria-label="Jog Z+">
+                  <ArrowUp size={16} />
+                </button>
+                <button className="jog-btn jog-hub" disabled title="Vertical axis">
+                  Z
+                </button>
+                <button className="jog-btn" disabled={disabled} onClick={() => jog({ Z: -step })} aria-label="Jog Z-">
+                  <ArrowDown size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="jog-zero-row">
+            <button className="tertiary" disabled={disabled} onClick={() => zero('X')}>
+              <LocateFixed size={13} />
+              Zero X
+            </button>
+            <button className="tertiary" disabled={disabled} onClick={() => zero('Y')}>
+              <LocateFixed size={13} />
+              Zero Y
+            </button>
+            <button className="tertiary" disabled={disabled} onClick={() => zero('Z')}>
+              <LocateFixed size={13} />
+              Zero Z
+            </button>
+          </div>
+        </div>
+
+        <p className="hint">0,0 rapids to X/Y zero. Arrows jog X/Y, PgUp/PgDn jog Z.</p>
+      </CardContent>
+    </Card>
+  );
+}

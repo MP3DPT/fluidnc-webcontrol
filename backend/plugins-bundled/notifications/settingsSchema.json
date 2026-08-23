@@ -1,0 +1,53 @@
+{
+  "fields": [
+    {
+      "type": "hint",
+      "text": "Sends a push notification for machine events, even when you're not looking at the browser tab. Pick a provider below - all three are free."
+    },
+    {
+      "key": "driver",
+      "type": "select",
+      "label": "Provider",
+      "default": "none",
+      "options": [
+        { "value": "none", "label": "None selected" },
+        { "value": "ntfy", "label": "ntfy.sh" },
+        { "value": "discord", "label": "Discord webhook" },
+        { "value": "telegram", "label": "Telegram bot" }
+      ]
+    },
+    {
+      "type": "hint",
+      "text": "Free, no signup. Install the ntfy app (iOS/Android) or open ntfy.sh/<your-topic> in a browser, and subscribe to the same topic you set below. Pick something unguessable - anyone who knows the topic name can read it. Self-hosted ntfy servers work too, just change the Server URL.",
+      "showIf": { "driver": "ntfy" }
+    },
+    { "key": "serverUrl", "type": "text", "label": "Server URL", "placeholder": "https://ntfy.sh", "default": "https://ntfy.sh", "showIf": { "driver": "ntfy" } },
+    { "key": "topic", "type": "text", "label": "Topic", "default": "", "showIf": { "driver": "ntfy" } },
+    {
+      "type": "hint",
+      "text": "Free. In a Discord server: Channel Settings -> Integrations -> Webhooks -> New Webhook -> Copy Webhook URL. Notifications show up as a message in that channel - handy if you (or your shop) already live in Discord.",
+      "showIf": { "driver": "discord" }
+    },
+    { "key": "webhookUrl", "type": "password", "label": "Webhook URL", "default": "", "showIf": { "driver": "discord" } },
+    {
+      "type": "hint",
+      "text": "Free. Message @BotFather on Telegram to create a bot and get a Bot Token. Then send your new bot any message, and open https://api.telegram.org/bot<token>/getUpdates in a browser to find your numeric Chat ID.",
+      "showIf": { "driver": "telegram" }
+    },
+    { "key": "botToken", "type": "password", "label": "Bot token", "default": "", "showIf": { "driver": "telegram" } },
+    { "key": "chatId", "type": "text", "label": "Chat ID", "default": "", "showIf": { "driver": "telegram" } },
+    {
+      "type": "hint",
+      "text": "Which events should send a notification:"
+    },
+    { "key": "notifyAppStarted", "type": "checkbox", "label": "Pi/app came online", "default": true },
+    { "key": "notifyAlarm", "type": "checkbox", "label": "CNC alarm triggered (with description)", "default": true },
+    { "key": "notifyJobFinished", "type": "checkbox", "label": "Job finished successfully", "default": true },
+    { "key": "notifyJobStopped", "type": "checkbox", "label": "Job stopped manually", "default": true },
+    { "key": "notifyJobError", "type": "checkbox", "label": "Job stopped due to an error", "default": true },
+    { "key": "notifyDisconnected", "type": "checkbox", "label": "Connection to the controller lost unexpectedly", "default": true }
+  ],
+  "actions": [
+    { "id": "test-notification", "label": "Send Test Notification" }
+  ]
+}
