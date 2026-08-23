@@ -138,7 +138,9 @@ export function PluginsManagerPanel({ plugins, send }: Props) {
         {browseLoading && <p className="hint">Loading available plugins…</p>}
         {browseError && (
           <p className="hint" style={{ color: 'var(--danger)' }}>
-            Couldn't reach the plugin index: {browseError}
+            Couldn't reach the plugin index ({browseError}) - this Pi is probably offline, or can't reach GitHub.
+            Download a plugin's .zip on another device that has internet, copy it over, and use{' '}
+            <strong>Install from .zip</strong> above instead.
           </p>
         )}
         {!browseLoading && !browseError && browsable.length === 0 && (
