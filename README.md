@@ -2,7 +2,7 @@
 
 A free, open-source (MIT), community-driven web control UI for [FluidNC](https://github.com/bdring/FluidNC)-based CNC controllers.
 
-**Status: working MVP.** Connect, jog, home, probe (with plate-thickness correction), load and stream G-code with a live 3D toolpath preview, pause/resume/stop — validated against real FluidNC hardware. Not yet spindle-aware (no M3/M4/M5 control) and no plugin system yet.
+**Status: working MVP.** Connect, jog, home, probe (with plate-thickness correction), load and stream G-code with a live 3D toolpath preview, pause/resume/stop — validated against real FluidNC hardware. Extensible through a plugin system: browse and one-click install from a public index right in the app, or drop in your own `.zip`. Fan control, push notifications, smart-plug automation, a webcam preview, and touch-plate Z-probing all ship as plugins today. Still no native spindle/laser control (M3/M4/M5) in the core app.
 
 This project is an independent community effort and is not affiliated with or endorsed by the FluidNC project, Bart Dring, or any controller manufacturer.
 
@@ -34,12 +34,32 @@ The backend owns the serial connection and speaks FluidNC's line protocol direct
 
 The command queue in `backend/src/serial/connection.ts` sends one line and waits for FluidNC's `ok`/`error` before sending the next. This is the conservative version of the Grbl streaming protocol — slower than character-counting streaming, but it cannot overrun the controller's planner buffer, which is the class of bug that has affected other senders paired with FluidNC. Optimizing this later (character-counting protocol) is a good first contribution once the basics are proven solid.
 
+## Plugins
+
+Anything FluidNC can't know about your specific shop — a cooling fan, a phone notification, a smart plug wired to the spindle, a webcam — lives in a plugin instead of the core app. A plugin is just a folder with a `plugin.json` manifest and an entry module, loaded from `~/.fluidnc-webcontrol/plugins` at runtime (see `backend/src/plugins/loader.ts`); installing one is a normal in-app action, no rebuild or restart needed.
+
+Open the **Plugins** tab in the sidebar to:
+- **Browse** what's available — the app fetches [`plugins.json`](plugins.json) from this repo and lists anything you don't already have installed, one click to install.
+- **Install from a `.zip`** manually, for a plugin you built yourself or got somewhere else.
+
+Shipped today:
+
+| Plugin | What it does |
+|---|---|
+| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM |
+| Notifications | Pushes alarms, job-completion, and connection-loss events to ntfy.sh, Discord, or Telegram |
+| Smart Plug Control | Turns the spindle's smart plug on before a job (with a spin-up delay) and off after, regardless of how the job ended |
+| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen |
+| Z-Probe \| Touch Plate | Touch-plate Z probing with plate-thickness correction |
+
+Writing your own: a plugin gets a `PluginContext` — the serial connection, the program runner, its own settings store, `registerBeforeRun`/`registerAction` hooks, and its own Express router under `/api/plugins/<id>`. Any folder under [`plugins/`](plugins) is a working example; `backend/src/plugins/types.ts` has the exact interface.
+
 ## Running it on a Raspberry Pi
 
 ### Quick install (recommended)
 
 ```bash
-git clone <your-fork-url> fluidnc-webcontrol
+git clone https://github.com/MP3DPT/fluidnc-webcontrol.git
 cd fluidnc-webcontrol
 sudo ./scripts/install.sh
 ```
@@ -85,10 +105,11 @@ npm run dev:frontend   # frontend on :5173, proxies /ws and /api to :8000
 - [x] Toolpath preview (full 3D, orbit/pan/zoom, live executed/pending coloring)
 - [x] Settings persisted on the Pi (survives reloads and reboots, synced across browsers)
 - [x] Reboot/shutdown from the UI (requires a one-time sudoers step, see setup above)
-- [ ] Spindle/laser control (M3/M4/M5 + speed) - currently no way to turn the spindle on at all
+- [x] Addon/plugin API (backend hooks + frontend panel registration) - see [Plugins](#plugins)
+- [x] Browsable plugin index with one-click install straight from a GitHub repo
+- [ ] Native spindle/laser control (M3/M4/M5 + speed) - no G-code spindle control yet; Smart Plug Control covers on/off via a smart plug in the meantime
 - [ ] Feed/spindle override sliders during a running job
 - [ ] Alarm recovery UX (currently just a status badge, no guided recovery)
-- [ ] Addon/plugin API (backend hooks + frontend panel registration)
 - [ ] WiFi/telnet transport (not just USB)
 
 ## Contributing
