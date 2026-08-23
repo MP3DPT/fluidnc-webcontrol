@@ -17,6 +17,8 @@ export interface PluginManifest {
    * HTML page - the frontend just iframes whatever that route returns.
    */
   panel?: boolean;
+  /** Which dashboard column the panel renders in - defaults to 'left' (below Actions), matching every panel plugin before this field existed. */
+  panelColumn?: 'left' | 'right';
 }
 
 export type SchemaFieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'hint';

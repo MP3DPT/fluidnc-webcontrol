@@ -3,13 +3,6 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-export interface ProbeSettings {
-  maxTravel: number;
-  feedrate: number;
-  plateThickness: number;
-  retractDistance: number;
-}
-
 export interface GeneralSettings {
   /** When a Console line is a feed move (G1/G2/G3) with no F word of its own, append consoleDefaultFeed instead of letting FluidNC reject it as "undefined feed rate". */
   consoleAutoFeedEnabled: boolean;
@@ -21,15 +14,16 @@ export type PluginSettings = Record<string, unknown> & { enabled: boolean };
 
 export interface Settings {
   general: GeneralSettings;
-  probe: ProbeSettings;
   plugins: Record<string, PluginSettings>;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   general: { consoleAutoFeedEnabled: true, consoleDefaultFeed: 300 },
-  probe: { maxTravel: -25, feedrate: 100, plateThickness: 0, retractDistance: 5 },
   plugins: {},
 };
+
+/** Z-Probe used to be a core feature with its settings living right on Settings.probe - now it's the zprobe-touchplate plugin's own bag, like any other plugin. */
+const ZPROBE_PLUGIN_ID = 'zprobe-touchplate';
 
 // Stored outside the deployable project tree (which gets overwritten on
 // every deploy) so settings survive redeploys as well as reboots.
@@ -46,20 +40,42 @@ export class SettingsStore extends EventEmitter {
 
   constructor() {
     super();
-    this.settings = this.load();
+    const { settings, migrated } = this.load();
+    this.settings = settings;
+    // Write the migration back immediately rather than waiting for some
+    // unrelated future settings change to happen to persist it - otherwise
+    // the on-disk file keeps showing the stale pre-migration shape
+    // indefinitely (harmless to runtime behavior, since load() re-derives
+    // the same result every restart, but confusing to anyone reading the
+    // file directly).
+    if (migrated) this.persist();
   }
 
-  private load(): Settings {
+  private load(): { settings: Settings; migrated: boolean } {
     try {
       const raw = readFileSync(SETTINGS_PATH, 'utf-8');
       const parsed = JSON.parse(raw);
+      const plugins = { ...(parsed.plugins ?? {}) };
+      let migrated = false;
+
+      // Pre-plugin Z-Probe: its settings lived at the top-level `probe` key.
+      // Migrate them into the new plugin's own bag once, so an existing
+      // user's already-configured (and already-enabled) values survive the
+      // switch instead of silently resetting to defaults.
+      if (parsed.probe && !plugins[ZPROBE_PLUGIN_ID]) {
+        plugins[ZPROBE_PLUGIN_ID] = { enabled: true, ...parsed.probe };
+        migrated = true;
+      }
+
       return {
-        general: { ...DEFAULT_SETTINGS.general, ...parsed.general },
-        probe: { ...DEFAULT_SETTINGS.probe, ...parsed.probe },
-        plugins: { ...(parsed.plugins ?? {}) },
+        settings: {
+          general: { ...DEFAULT_SETTINGS.general, ...parsed.general },
+          plugins,
+        },
+        migrated,
       };
     } catch {
-      return structuredClone(DEFAULT_SETTINGS);
+      return { settings: structuredClone(DEFAULT_SETTINGS), migrated: false };
     }
   }
 
@@ -67,10 +83,9 @@ export class SettingsStore extends EventEmitter {
     return this.settings;
   }
 
-  update(partial: Partial<Pick<Settings, 'probe' | 'general'>>): Settings {
+  update(partial: Partial<Pick<Settings, 'general'>>): Settings {
     this.settings = {
       ...this.settings,
-      probe: { ...this.settings.probe, ...partial.probe },
       general: { ...this.settings.general, ...partial.general },
     };
     this.persist();

@@ -19,6 +19,7 @@ export function useSocket() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [machineRates, setMachineRates] = useState<MachineRates | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const pendingPluginActions = useRef(new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>());
 
   const appendLog = useCallback((kind: LogEntry['kind'], text: string) => {
     setLog((prev) => [...prev.slice(-199), { id: logIdCounter++, kind, text }]);
@@ -106,9 +107,23 @@ export function useSocket() {
             setPlugins(msg.data as PluginInfo[]);
             break;
           case 'pluginActionResult': {
-            const { result } = msg.data as { pluginId: string; actionId: string; result: unknown };
+            const { result, requestId } = msg.data as { pluginId: string; actionId: string; result: unknown; requestId?: string };
+            if (requestId && pendingPluginActions.current.has(requestId)) {
+              pendingPluginActions.current.get(requestId)!.resolve(result);
+              pendingPluginActions.current.delete(requestId);
+            }
             const message = (result as { message?: string } | undefined)?.message;
             if (message) appendLog('feedback', message);
+            break;
+          }
+          case 'pluginActionError': {
+            const { error, requestId } = msg.data as { pluginId: string; actionId: string; error: string; requestId?: string };
+            if (requestId && pendingPluginActions.current.has(requestId)) {
+              pendingPluginActions.current.get(requestId)!.reject(new Error(error));
+              pendingPluginActions.current.delete(requestId);
+            } else {
+              appendLog('error', error);
+            }
             break;
           }
           case 'firmwareSettings': {
@@ -140,6 +155,15 @@ export function useSocket() {
     wsRef.current?.send(JSON.stringify(message));
   }, []);
 
+  /** Same plugin-action call the Settings modal's test buttons use, but returns a Promise correlated by requestId - lets an on-dashboard plugin panel (see PluginPanels.tsx) await its own result instead of only getting a fire-and-forget log line. */
+  const invokePluginAction = useCallback((pluginId: string, actionId: string, params?: unknown): Promise<unknown> => {
+    return new Promise((resolve, reject) => {
+      const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      pendingPluginActions.current.set(requestId, { resolve, reject });
+      send({ type: 'pluginAction', pluginId, actionId, params, requestId });
+    });
+  }, [send]);
+
   // Re-fetch the machine's real rate settings every time a connection opens
   // (including reconnects), so time estimates use current values without
   // the rest of the app needing to remember to ask.
@@ -160,5 +184,6 @@ export function useSocket() {
     machineRates,
     plugins,
     send,
+    invokePluginAction,
   };
 }

@@ -23,19 +23,10 @@ type ClientMessage =
   | { type: 'reset' }
   | { type: 'feedHold' }
   | { type: 'cycleStart' }
-  | { type: 'probe'; axis: 'X' | 'Y' | 'Z'; distance: number; feedrate: number }
-  | {
-      type: 'probeAndZero';
-      axis: 'X' | 'Y' | 'Z';
-      distance: number;
-      feedrate: number;
-      plateThickness: number;
-      retractDistance: number;
-    }
   | { type: 'gcode'; line: string }
   | { type: 'updateSettings'; settings: Partial<Settings> }
   | { type: 'updatePluginSettings'; pluginId: string; settings: Record<string, unknown> }
-  | { type: 'pluginAction'; pluginId: string; actionId: string; params?: unknown }
+  | { type: 'pluginAction'; pluginId: string; actionId: string; params?: unknown; requestId?: string }
   | { type: 'listPlugins' }
   | { type: 'loadProgram'; name: string; gcode: string }
   | { type: 'runProgram' }
@@ -136,18 +127,6 @@ export async function attachWebSocketServer(httpServer: HttpServer, connection: 
           case 'cycleStart':
             connection.cycleStart();
             break;
-          case 'probe':
-            await connection.probe(msg.axis, msg.distance, msg.feedrate);
-            break;
-          case 'probeAndZero':
-            await connection.probeAndZero(
-              msg.axis,
-              msg.distance,
-              msg.feedrate,
-              msg.plateThickness,
-              msg.retractDistance,
-            );
-            break;
           case 'gcode':
             await connection.sendLine(msg.line);
             break;
@@ -159,8 +138,31 @@ export async function attachWebSocketServer(httpServer: HttpServer, connection: 
             broadcast(wss, { type: 'plugins', data: pluginLoader.list() });
             break;
           case 'pluginAction': {
-            const result = await pluginLoader.invokeAction(msg.pluginId, msg.actionId, msg.params);
-            ws.send(JSON.stringify({ type: 'pluginActionResult', data: { pluginId: msg.pluginId, actionId: msg.actionId, result } }));
+            // Own try/catch (rather than relying on the outer one) so a
+            // failure is correlated back via requestId - the outer catch's
+            // generic commandError has no way to tell a live on-dashboard
+            // panel which of its in-flight requests just failed.
+            try {
+              const result = await pluginLoader.invokeAction(msg.pluginId, msg.actionId, msg.params);
+              ws.send(
+                JSON.stringify({
+                  type: 'pluginActionResult',
+                  data: { pluginId: msg.pluginId, actionId: msg.actionId, requestId: msg.requestId, result },
+                }),
+              );
+            } catch (err) {
+              ws.send(
+                JSON.stringify({
+                  type: 'pluginActionError',
+                  data: {
+                    pluginId: msg.pluginId,
+                    actionId: msg.actionId,
+                    requestId: msg.requestId,
+                    error: err instanceof Error ? err.message : String(err),
+                  },
+                }),
+              );
+            }
             break;
           }
           case 'listPlugins':

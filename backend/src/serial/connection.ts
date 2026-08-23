@@ -285,49 +285,6 @@ export class FluidNCConnection extends EventEmitter {
   }
 
   /**
-   * Probes, then sets the work zero corrected for a touch plate's
-   * thickness, then retracts clear of the plate. This is the actual
-   * real-world touch-off workflow (plate sits on top of the material) -
-   * a bare probe() alone would zero at the top of the plate, not the
-   * material surface, which is off by exactly the plate thickness.
-   *
-   * At the moment of contact the tool is `plateThickness` above the true
-   * work zero, so instead of zeroing the current position, we tell the
-   * controller the current position IS `plateThickness` (G10 L20 P1) -
-   * work zero then correctly lands on the material surface once retracted.
-   */
-  async probeAndZero(
-    axis: 'X' | 'Y' | 'Z',
-    distance: number,
-    feedrate: number,
-    plateThickness: number,
-    retractDistance: number,
-  ): Promise<ProbeResult> {
-    const result = await new Promise<ProbeResult>((resolve, reject) => {
-      this.once('probeResult', (r: ProbeResult) => resolve(r));
-      this.probe(axis, distance, feedrate).catch(reject);
-    });
-
-    if (!result.success) {
-      throw new Error('Probe did not make contact within max travel');
-    }
-
-    const thicknessSign = plateThickness >= 0 ? '' : '-';
-    await this.sendLine(`G10 L20 P1 ${axis}${thicknessSign}${Math.abs(plateThickness)}`);
-
-    if (retractDistance !== 0) {
-      // Retract opposite to the direction the probe travelled to trigger.
-      const retractValue = (distance >= 0 ? -1 : 1) * Math.abs(retractDistance);
-      const retractSign = retractValue >= 0 ? '' : '-';
-      await this.sendLine(`G91`);
-      await this.sendLine(`G0 ${axis}${retractSign}${Math.abs(retractValue)}`);
-      await this.sendLine('G90');
-    }
-
-    return result;
-  }
-
-  /**
    * Reads FluidNC's Grbl-compatible settings dump ($$) - each line looks
    * like "$110=2000.000" (X max rate). Used for time estimation so rapid
    * moves are timed against the machine's real configured limits instead

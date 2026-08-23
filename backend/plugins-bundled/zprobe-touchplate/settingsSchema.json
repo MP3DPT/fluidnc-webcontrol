@@ -1,0 +1,8 @@
+{
+  "fields": [
+    { "key": "maxTravel", "type": "number", "label": "Max travel", "unit": "mm", "default": -25 },
+    { "key": "feedrate", "type": "number", "label": "Feed", "unit": "mm/min", "default": 100 },
+    { "key": "plateThickness", "type": "number", "label": "Probe thickness", "unit": "mm", "default": 0 },
+    { "key": "retractDistance", "type": "number", "label": "Retract distance", "unit": "mm", "default": 5 }
+  ]
+}

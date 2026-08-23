@@ -689,6 +689,16 @@ main {
   background: #000;
 }
 
+/* A panel that reports its own content height (via the postMessage bridge)
+   is form/content-shaped, not video-shaped - no boxed-in border/background,
+   just flows like native card content at its own natural height. */
+.plugin-panel-frame-auto {
+  aspect-ratio: auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
 /* ============================================================
    Divider
    ============================================================ */

@@ -67,13 +67,6 @@ export interface ProgramStatus {
   total: number;
 }
 
-export interface ProbeSettings {
-  maxTravel: number;
-  feedrate: number;
-  plateThickness: number;
-  retractDistance: number;
-}
-
 export interface GeneralSettings {
   consoleAutoFeedEnabled: boolean;
   consoleDefaultFeed: number;
@@ -84,7 +77,6 @@ export type PluginConfig = Record<string, unknown> & { enabled: boolean };
 
 export interface Settings {
   general: GeneralSettings;
-  probe: ProbeSettings;
   plugins: Record<string, PluginConfig>;
 }
 
@@ -97,6 +89,8 @@ export interface PluginManifest {
   entry: string;
   /** True if this plugin renders a live panel on the main screen (below Actions), served at /api/plugins/<id>/panel. */
   panel?: boolean;
+  /** Which dashboard column the panel renders in - defaults to 'left' (below Actions), matching every panel plugin before this field existed. */
+  panelColumn?: 'left' | 'right';
 }
 
 export type SchemaFieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'hint';

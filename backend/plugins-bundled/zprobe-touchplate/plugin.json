@@ -1,0 +1,10 @@
+{
+  "id": "zprobe-touchplate",
+  "name": "Z-Probe | Touch Plate",
+  "version": "0.1.0",
+  "author": "fluidnc-webcontrol",
+  "description": "Touch-plate Z probing - probes down, zeros work Z corrected for the plate's thickness, then retracts clear. Bundled as a plugin (rather than a core feature) since Z-probe hardware varies a lot - swap this out for a different plugin if yours works differently.",
+  "entry": "index.js",
+  "panel": true,
+  "panelColumn": "right"
+}

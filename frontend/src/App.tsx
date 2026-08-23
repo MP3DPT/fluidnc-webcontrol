@@ -13,7 +13,6 @@ import { JogPanel } from './components/JogPanel';
 import { ActionsPanel } from './components/ActionsPanel';
 import { EmergencyStopButton } from './components/EmergencyStopButton';
 import { PluginPanels } from './components/PluginPanels';
-import { ProbePanel } from './components/ProbePanel';
 import { ProgramPanel } from './components/ProgramPanel';
 import { ToolpathPreview3D, type ToolpathPreviewHandle } from './components/ToolpathPreview3D';
 import { ConsolePanel } from './components/ConsolePanel';
@@ -41,6 +40,7 @@ export default function App() {
     machineRates,
     plugins,
     send,
+    invokePluginAction,
   } = useSocket();
   const controlsDisabled = !connectionOpen;
 
@@ -179,7 +179,14 @@ export default function App() {
           <StatusPanel status={status} />
           <ActionsPanel disabled={controlsDisabled} send={send} />
           <EmergencyStopButton visible={connectionOpen} send={send} />
-          <PluginPanels plugins={plugins} />
+          <PluginPanels
+            plugins={plugins}
+            column="left"
+            connectionOpen={connectionOpen}
+            lastProbeResult={lastProbeResult}
+            send={send}
+            invokePluginAction={invokePluginAction}
+          />
         </div>
         <div className="column wide">
           <Card>
@@ -273,11 +280,13 @@ export default function App() {
         </div>
         <div className="column">
           <JogPanel disabled={controlsDisabled} workPosition={workPosition} send={send} />
-          <ProbePanel
-            disabled={controlsDisabled}
-            lastResult={lastProbeResult}
-            settings={settings?.probe ?? null}
+          <PluginPanels
+            plugins={plugins}
+            column="right"
+            connectionOpen={connectionOpen}
+            lastProbeResult={lastProbeResult}
             send={send}
+            invokePluginAction={invokePluginAction}
           />
         </div>
       </main>
