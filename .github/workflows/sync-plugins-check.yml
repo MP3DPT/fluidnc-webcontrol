@@ -1,0 +1,33 @@
+name: Plugin sync check
+
+# Confirmed the hard way (twice) that plugins/<id>/ drifting from
+# plugins/<id>.zip and backend/plugins-bundled/<id>/ silently ships broken
+# plugin code to users - see scripts/sync-plugins.mjs. This just catches
+# that drift before it merges; it doesn't touch anything.
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'plugins/**'
+      - 'backend/plugins-bundled/**'
+      - 'scripts/sync-plugins.mjs'
+  pull_request:
+    paths:
+      - 'plugins/**'
+      - 'backend/plugins-bundled/**'
+      - 'scripts/sync-plugins.mjs'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run sync-plugins:check
