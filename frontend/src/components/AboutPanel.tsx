@@ -1,4 +1,4 @@
-import { Coffee } from 'lucide-react';
+import { Coffee, GitFork } from 'lucide-react';
 
 /** Static "what is this app" blurb - its own sidebar destination, not folded into Settings. */
 export function AboutPanel() {
@@ -9,6 +9,15 @@ export function AboutPanel() {
         A free, open-source web control interface for FluidNC CNC controllers - jog, stream G-code, probe, and
         monitor a machine from any browser on the network.
       </p>
+      <a
+        className="about-github-link"
+        href="https://github.com/MP3DPT/fluidnc-webcontrol"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <GitFork size={15} />
+        github.com/MP3DPT/fluidnc-webcontrol
+      </a>
 
       <div className="settings-section">
         <h4>Why this exists</h4>
@@ -82,8 +91,11 @@ export function AboutPanel() {
           This app was built to solve its developer's own, immediate needs - that's why the plugins available today
           cover exactly what he needed on his own machine, not a wishlist of everything FluidNC could ever do. More
           features and plugins are likely to show up over time simply from continued use. If you run into something
-          missing, don't just work around it - contribute it or suggest it, whether that's a core app change or a
-          brand new plugin.
+          missing, don't just work around it -{' '}
+          <a href="https://github.com/MP3DPT/fluidnc-webcontrol/issues" target="_blank" rel="noopener noreferrer">
+            open an issue
+          </a>{' '}
+          or contribute it yourself, whether that's a core app change or a brand new plugin.
         </p>
       </div>
 

@@ -1095,6 +1095,21 @@ button.ghost:not(:disabled):hover {
   border-top: 1px solid var(--border);
 }
 
+.about-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font: var(--text-body);
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.about-github-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 .about-coffee-link {
   display: inline-flex;
   align-items: center;
