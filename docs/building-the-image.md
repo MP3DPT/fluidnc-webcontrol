@@ -79,6 +79,18 @@ Confirm `ssh_pwauth`/`PasswordAuthentication` is enabled in
 build process disabled it) - password auth is how downloaders actually log
 in with the documented credentials.
 
+`pi`/`raspberry` is purely an OS-level SSH/console login for administering
+the Pi itself - it is not a dependency of the app. Step 2's dedicated
+`fluidnc-webcontrol` system account is what actually owns the systemd
+service, the `dialout`/`video`/`gpio` group memberships, the scoped
+`shutdown` sudoers entry, and the data directory. A downloader renaming
+`pi`, changing its password, swapping to key-only auth, or disabling
+password auth entirely does not affect the app in any way - the web UI
+keeps running untouched through any of that, since it never depended on
+that account to begin with. Worth telling downloaders this directly if it
+comes up, since "change the default password" is exactly what the README
+tells them to do right after first login.
+
 ## 4. Regenerate SSH host keys on next boot instead of shipping fixed ones
 
 If every image shares the same SSH host keys, every device flashed from it
