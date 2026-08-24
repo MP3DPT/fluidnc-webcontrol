@@ -14,6 +14,51 @@ function matches(condition: Record<string, unknown> | undefined, config: Record<
   return Object.entries(condition).every(([key, value]) => config[key] === value);
 }
 
+interface DeferredInputProps {
+  type: string;
+  value: string;
+  placeholder?: string;
+  onCommit: (value: string) => void;
+}
+
+/**
+ * Text/number fields used to persist on every keystroke, with the input's
+ * displayed value bound straight to the server-echoed config prop - each
+ * keystroke raced its own round trip against the next one, and a slower
+ * network (or just typing faster than the round trip) reliably dropped
+ * characters, since a stale echo arriving between keystrokes reset the DOM
+ * value out from under whatever was being typed. Local state decouples
+ * what's displayed from the round trip entirely; onCommit (blur, or Enter)
+ * sends the final value once instead of once per character.
+ */
+function DeferredInput({ type, value, placeholder, onCommit }: DeferredInputProps) {
+  const [draft, setDraft] = useState(value);
+  const [focused, setFocused] = useState(false);
+
+  // Only follow external updates while the user isn't actively editing -
+  // otherwise a settings broadcast arriving mid-edit would still clobber it.
+  useEffect(() => {
+    if (!focused) setDraft(value);
+  }, [value, focused]);
+
+  return (
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={draft}
+      onFocus={() => setFocused(true)}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        setFocused(false);
+        if (draft !== value) onCommit(draft);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
 export function PluginCard({ plugin, send, onUninstall }: Props) {
   const { manifest, schema, config } = plugin;
   const [configuring, setConfiguring] = useState(false);
@@ -87,10 +132,10 @@ export function PluginCard({ plugin, send, onUninstall }: Props) {
           <label>
             {field.label}
             <span className="field-row">
-              <input
+              <DeferredInput
                 type="number"
-                value={Number(value ?? 0)}
-                onChange={(e) => persist({ [key]: Number(e.target.value) })}
+                value={String(Number(value ?? 0))}
+                onCommit={(v) => persist({ [key]: Number(v) })}
               />
               {field.unit && <span>{field.unit}</span>}
             </span>
@@ -98,11 +143,11 @@ export function PluginCard({ plugin, send, onUninstall }: Props) {
         ) : (
           <label>
             {field.label}
-            <input
+            <DeferredInput
               type={field.type}
               placeholder={field.placeholder}
               value={String(value ?? '')}
-              onChange={(e) => persist({ [key]: e.target.value })}
+              onCommit={(v) => persist({ [key]: v })}
             />
           </label>
         )}
