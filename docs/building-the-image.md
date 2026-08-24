@@ -59,18 +59,23 @@ under an SSH session works but is more fragile than doing it from outside.
 ## 4. Regenerate SSH host keys on next boot instead of shipping fixed ones
 
 If every image shares the same SSH host keys, every device flashed from it
-is impersonable/MITM-able by anything that captured those keys. Raspberry
-Pi OS already ships a service that regenerates them on first boot as long
-as the key files don't exist yet - so just remove them:
+is impersonable/MITM-able by anything that captured those keys, so remove
+them before capture:
 
 ```bash
 sudo systemctl stop ssh
 sudo rm -f /etc/ssh/ssh_host_*
 ```
 
-Leave `regenerate_ssh_host_keys.service` alone; it fires automatically the
-next time this system boots (which, after imaging, will be on someone
-else's Pi).
+`install-image.sh` already installs a `fluidnc-ssh-keygen.service` unit
+that runs `ssh-keygen -A` before `ssh.service` starts on every boot -
+confirmed necessary the hard way: relying on Raspberry Pi OS's own
+`regenerate_ssh_host_keys.service` firing automatically was not reliable
+on every release (an image was captured and flashed with SSH host keys
+removed, and `ssh.service` simply never came up - no distro-provided
+mechanism regenerated them, silently taking SSH access away entirely on
+that build). `ssh-keygen -A` is idempotent, so this unit is always safe
+regardless of what the base OS does or doesn't do on its own.
 
 ## 5. Clear machine-id
 

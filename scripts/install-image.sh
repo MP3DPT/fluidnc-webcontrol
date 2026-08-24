@@ -93,6 +93,36 @@ if ! visudo -c -f "$SUDOERS_FILE" >/dev/null; then
   exit 1
 fi
 
+echo "==> Installing guaranteed SSH host key regeneration"
+# docs/building-the-image.md's sanitization step deletes /etc/ssh/ssh_host_*
+# before capturing the image, relying on the base OS to regenerate fresh,
+# unique keys on each downloader's first boot - but that turned out not to
+# be reliable on every Raspberry Pi OS release (confirmed: ssh.service can
+# fail to start at all when its host keys are simply missing, if whatever
+# distro-provided regeneration mechanism doesn't fire in time, or isn't
+# present on that particular build). Rather than depend on unverified
+# distro behavior for something this important, guarantee it ourselves:
+# ssh-keygen -A is already idempotent (only creates whichever key types are
+# actually missing), so running it unconditionally before every ssh.service
+# start is always safe, not just on the first boot after imaging.
+KEYGEN_SERVICE=/etc/systemd/system/fluidnc-ssh-keygen.service
+cat > "$KEYGEN_SERVICE" <<'EOF'
+[Unit]
+Description=Ensure SSH host keys exist before sshd starts
+Before=ssh.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ssh-keygen -A
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable fluidnc-ssh-keygen.service
+
 echo "==> Installing systemd service"
 SERVICE_FILE=/etc/systemd/system/fluidnc-webcontrol.service
 cat > "$SERVICE_FILE" <<EOF
