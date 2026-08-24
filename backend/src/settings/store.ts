@@ -7,6 +7,8 @@ export interface GeneralSettings {
   /** When a Console line is a feed move (G1/G2/G3) with no F word of its own, append consoleDefaultFeed instead of letting FluidNC reject it as "undefined feed rate". */
   consoleAutoFeedEnabled: boolean;
   consoleDefaultFeed: number;
+  /** The Jog panel's Step dropdown options, in mm - user-configurable since the right increments vary a lot by job (0.01mm engraving vs. 100mm rapid repositioning). Always non-empty; kept sorted ascending. */
+  jogStepSizes: number[];
 }
 
 /** Each plugin's own flat settings bag - always has at least "enabled". */
@@ -18,7 +20,7 @@ export interface Settings {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  general: { consoleAutoFeedEnabled: true, consoleDefaultFeed: 300 },
+  general: { consoleAutoFeedEnabled: true, consoleDefaultFeed: 300, jogStepSizes: [0.1, 1, 10, 50] },
   plugins: {},
 };
 
@@ -87,6 +89,37 @@ export class SettingsStore extends EventEmitter {
     this.settings = {
       ...this.settings,
       general: { ...this.settings.general, ...partial.general },
+    };
+    this.persist();
+    this.emit('change', this.settings);
+    return this.settings;
+  }
+
+  /**
+   * Wholesale replace from an exported backup (see AppSettingsPanel's
+   * Backup & Restore) - unlike update(), this is a full replace of
+   * `plugins` too, not a merge with whatever's currently configured, since
+   * "restore" means becoming exactly what the backup says. Safe to restore
+   * onto a device with a plugin not yet installed: ensurePluginEntry() only
+   * initializes an entry if one doesn't already exist, so a restored
+   * plugin's config just sits here untouched until that plugin is actually
+   * installed and picks it up.
+   */
+  restore(incoming: unknown): Settings {
+    if (typeof incoming !== 'object' || incoming === null) {
+      throw new Error('Backup file is not a valid settings object');
+    }
+    const { general, plugins } = incoming as Partial<Settings>;
+    if (general !== undefined && (typeof general !== 'object' || general === null)) {
+      throw new Error('Backup file\'s "general" section is malformed');
+    }
+    if (plugins !== undefined && (typeof plugins !== 'object' || plugins === null)) {
+      throw new Error('Backup file\'s "plugins" section is malformed');
+    }
+
+    this.settings = {
+      general: { ...DEFAULT_SETTINGS.general, ...general },
+      plugins: (plugins as Settings['plugins']) ?? {},
     };
     this.persist();
     this.emit('change', this.settings);

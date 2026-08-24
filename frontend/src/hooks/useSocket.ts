@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { LogEntry, PluginInfo, PortInfo, Position, ProbeResult, ProgramStatus, Settings, StatusReport } from '../types';
+import type { BackendLogEntry, LogEntry, PluginInfo, PortInfo, Position, ProbeResult, ProgramStatus, Settings, StatusReport } from '../types';
 import type { MachineRates } from '../gcode/estimateTime';
 
 const RECONNECT_DELAY_MS = 2000;
@@ -19,6 +19,7 @@ export function useSocket() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [machineRates, setMachineRates] = useState<MachineRates | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [backendLog, setBackendLog] = useState<BackendLogEntry[]>([]);
   const pendingPluginActions = useRef(new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>());
 
   const appendLog = useCallback((kind: LogEntry['kind'], text: string) => {
@@ -106,6 +107,15 @@ export function useSocket() {
           case 'plugins':
             setPlugins(msg.data as PluginInfo[]);
             break;
+          case 'backendLogs':
+            setBackendLog(msg.data as BackendLogEntry[]);
+            break;
+          case 'backendLogLine':
+            // Capped client-side too, matching the backend's own ring
+            // buffer limit - otherwise a browser tab left open for days
+            // would grow this array unboundedly between reloads.
+            setBackendLog((prev) => [...prev.slice(-299), msg.data as BackendLogEntry]);
+            break;
           case 'pluginActionResult': {
             const { result, requestId } = msg.data as { pluginId: string; actionId: string; result: unknown; requestId?: string };
             if (requestId && pendingPluginActions.current.has(requestId)) {
@@ -183,6 +193,7 @@ export function useSocket() {
     settings,
     machineRates,
     plugins,
+    backendLog,
     send,
     invokePluginAction,
   };

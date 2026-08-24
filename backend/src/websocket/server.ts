@@ -8,6 +8,7 @@ import { ProgramRunner } from '../program/runner.js';
 import { SettingsStore, type Settings } from '../settings/store.js';
 import { rebootSystem, shutdownSystem } from '../system/power.js';
 import { PluginLoader } from '../plugins/loader.js';
+import type { LogStore } from '../logging/logStore.js';
 
 // backend/src/websocket/server.ts -> backend/plugins-bundled
 const BUNDLED_PLUGINS_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../plugins-bundled');
@@ -25,6 +26,7 @@ type ClientMessage =
   | { type: 'cycleStart' }
   | { type: 'gcode'; line: string }
   | { type: 'updateSettings'; settings: Partial<Settings> }
+  | { type: 'restoreSettings'; settings: unknown }
   | { type: 'updatePluginSettings'; pluginId: string; settings: Record<string, unknown> }
   | { type: 'pluginAction'; pluginId: string; actionId: string; params?: unknown; requestId?: string }
   | { type: 'listPlugins' }
@@ -45,7 +47,12 @@ function broadcast(wss: WebSocketServer, message: unknown) {
   }
 }
 
-export async function attachWebSocketServer(httpServer: HttpServer, connection: FluidNCConnection, httpApp: Express) {
+export async function attachWebSocketServer(
+  httpServer: HttpServer,
+  connection: FluidNCConnection,
+  httpApp: Express,
+  logStore: LogStore,
+) {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   const runner = new ProgramRunner(connection);
   const settingsStore = new SettingsStore();
@@ -78,11 +85,14 @@ export async function attachWebSocketServer(httpServer: HttpServer, connection: 
   // sync when settings change from any one of them.
   settingsStore.on('change', forward('settings'));
 
+  logStore.on('line', forward('backendLogLine'));
+
   wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ type: 'connectionState', data: { isOpen: connection.isOpen } }));
     ws.send(JSON.stringify({ type: 'programStatus', data: runner.getState() }));
     ws.send(JSON.stringify({ type: 'settings', data: settingsStore.get() }));
     ws.send(JSON.stringify({ type: 'plugins', data: pluginLoader.list() }));
+    ws.send(JSON.stringify({ type: 'backendLogs', data: logStore.list() }));
 
     ws.on('message', async (raw) => {
       let msg: ClientMessage;
@@ -132,6 +142,15 @@ export async function attachWebSocketServer(httpServer: HttpServer, connection: 
             break;
           case 'updateSettings':
             settingsStore.update(msg.settings);
+            break;
+          case 'restoreSettings':
+            settingsStore.restore(msg.settings);
+            // settingsStore's own 'change' broadcast only carries the raw
+            // settings object - PluginCard/PluginsManagerPanel read plugin
+            // config from the separate `plugins` list instead, which
+            // doesn't refresh on its own until the next install/uninstall
+            // or reload. Broadcast it too so a restore shows up immediately.
+            broadcast(wss, { type: 'plugins', data: pluginLoader.list() });
             break;
           case 'updatePluginSettings':
             settingsStore.updatePluginConfig(msg.pluginId, msg.settings);

@@ -59,6 +59,14 @@ export interface LogEntry {
   text: string;
 }
 
+/** A backend console.error/warn line - app/plugin diagnostics, not machine G-code traffic (that's LogEntry/the Console tab). See backend/src/logging/logStore.ts. */
+export interface BackendLogEntry {
+  id: number;
+  level: 'warn' | 'error';
+  message: string;
+  timestamp: number;
+}
+
 export type ProgramState = 'idle' | 'running' | 'paused' | 'complete' | 'stopped' | 'error';
 
 export interface ProgramStatus {
@@ -70,6 +78,7 @@ export interface ProgramStatus {
 export interface GeneralSettings {
   consoleAutoFeedEnabled: boolean;
   consoleDefaultFeed: number;
+  jogStepSizes: number[];
 }
 
 /** A plugin's own flat settings bag - always has at least "enabled". */

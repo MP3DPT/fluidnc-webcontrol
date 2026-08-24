@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, Settings as SettingsIcon, Terminal } from 'lucide-react';
+import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, ScrollText, Settings as SettingsIcon, Terminal } from 'lucide-react';
 import { useSocket } from './hooks/useSocket';
 import { parseToolpath } from './gcode/parseToolpath';
 import { renderThumbnail } from './gcode/renderThumbnail';
@@ -15,6 +15,7 @@ import { PluginsManagerPanel } from './components/PluginsManagerPanel';
 import { AppSettingsPanel } from './components/AppSettingsPanel';
 import { AboutPanel } from './components/AboutPanel';
 import { ProgramPanel } from './components/ProgramPanel';
+import { LogsPanel } from './components/LogsPanel';
 import { ToolpathPreview3D, type ToolpathPreviewHandle } from './components/ToolpathPreview3D';
 import { ConsolePanel } from './components/ConsolePanel';
 import { FileManagerPanel } from './components/FileManagerPanel';
@@ -46,6 +47,7 @@ export default function App() {
     settings,
     machineRates,
     plugins,
+    backendLog,
     send,
     invokePluginAction,
   } = useSocket();
@@ -137,6 +139,7 @@ export default function App() {
           { key: 'files', icon: <FolderOpen size={22} />, label: 'Files' },
           { key: 'plugins', icon: <Puzzle size={22} />, label: 'Plugins' },
           { key: 'settings', icon: <SettingsIcon size={22} />, label: 'Settings' },
+          { key: 'logs', icon: <ScrollText size={22} />, label: 'Logs' },
         ]}
         footerItems={[{ key: 'about', icon: <Info size={22} />, label: 'About' }]}
         version="v0.2.0"
@@ -146,6 +149,17 @@ export default function App() {
 
       <Drawer open={activePanel === 'files'} title="File Manager" onClose={() => setActivePanel(null)}>
         <FileManagerPanel onLoad={loadFromLibrary} />
+      </Drawer>
+
+      <Drawer open={activePanel === 'logs'} title="Logs" onClose={() => setActivePanel(null)}>
+        <LogsPanel
+          log={backendLog}
+          connectionOpen={connectionOpen}
+          status={status}
+          programStatus={programStatus}
+          settings={settings}
+          plugins={plugins}
+        />
       </Drawer>
 
       <Drawer open={activePanel === 'plugins'} title="Plugins" onClose={() => setActivePanel(null)}>
@@ -343,7 +357,7 @@ export default function App() {
           </Card>
         </div>
         <div className="column">
-          <JogPanel disabled={controlsDisabled} workPosition={workPosition} send={send} />
+          <JogPanel disabled={controlsDisabled} workPosition={workPosition} settings={settings} send={send} />
           <PluginPanels
             plugins={plugins}
             column="right"

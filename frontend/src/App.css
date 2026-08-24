@@ -1621,6 +1621,33 @@ button.ghost:not(:disabled):hover {
   font-family: var(--font-mono);
 }
 
+.logs-toolbar {
+  justify-content: space-between;
+}
+
+.backend-log {
+  height: 60vh;
+  overflow-y: auto;
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.backend-log-time {
+  color: var(--text-muted);
+}
+
+.backend-log-error {
+  color: var(--danger);
+}
+
+.backend-log-warn {
+  color: var(--warning);
+}
+
 /* ============================================================
    Toolpath
    ============================================================ */
@@ -1794,6 +1821,14 @@ button.ghost:not(:disabled):hover {
 
 .settings-section h4 {
   margin-top: 0;
+}
+
+/* Every section after the first gets a divider above it - automatic, so a
+   new section landing later (per the panel's own "more options will land
+   here over time" note) doesn't need anyone to remember to add one. */
+.settings-section:not(:first-child) {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
 }
 
 code {

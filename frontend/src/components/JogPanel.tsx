@@ -14,9 +14,9 @@ import {
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { CoordinateDisplay } from './ui/CoordinateDisplay';
 import { Divider } from './ui/Divider';
-import type { Position } from '../types';
+import type { Position, Settings } from '../types';
 
-const STEP_SIZES = [0.1, 1, 10, 50];
+const DEFAULT_STEP_SIZES = [0.1, 1, 10, 50];
 const FEED_INCREMENT = 10;
 
 // CNCjs convention: arrows for X/Y, Page Up/Down for Z.
@@ -32,12 +32,23 @@ const KEY_JOG_MAP: Record<string, { X?: number; Y?: number; Z?: number }> = {
 interface Props {
   disabled: boolean;
   workPosition: Position | null;
+  settings: Settings | null;
   send: (message: Record<string, unknown>) => void;
 }
 
-export function JogPanel({ disabled, workPosition, send }: Props) {
+export function JogPanel({ disabled, workPosition, settings, send }: Props) {
+  const stepSizes = settings?.general.jogStepSizes ?? DEFAULT_STEP_SIZES;
   const [step, setStep] = useState(1);
   const [feedrate, setFeedrate] = useState(1000);
+
+  // The configured step list can change at any time (Settings panel, or a
+  // different browser tab editing it) - if the currently-selected step is
+  // no longer one of the options, the <select> would silently show nothing
+  // selected while `step` still held a stale, no-longer-visible value.
+  useEffect(() => {
+    if (!stepSizes.includes(step)) setStep(stepSizes[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepSizes]);
 
   const jog = (deltas: { X?: number; Y?: number; Z?: number }) => send({ type: 'jog', deltas, feedrate });
   const gcode = (line: string) => send({ type: 'gcode', line });
@@ -110,7 +121,7 @@ export function JogPanel({ disabled, workPosition, send }: Props) {
           <label className="field-step">
             Step
             <select value={step} onChange={(e) => setStep(Number(e.target.value))}>
-              {STEP_SIZES.map((s) => (
+              {stepSizes.map((s) => (
                 <option key={s} value={s}>
                   {s} mm
                 </option>

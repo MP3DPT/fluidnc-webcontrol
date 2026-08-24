@@ -1,18 +1,45 @@
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { FluidNCConnection } from './serial/connection.js';
 import { attachWebSocketServer } from './websocket/server.js';
 import { FileLibraryStore } from './files/store.js';
+import { LogStore } from './logging/logStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 8000);
 const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
+// Matches the frontend's own hardcoded version string (Sidebar/AboutPanel) -
+// this project doesn't read package.json for it anywhere, so staying
+// consistent with that rather than introducing a second source.
+const APP_VERSION = '0.2.0';
 
 async function main() {
+  // Attached before anything else can log, so even an early startup error
+  // (a fatal one included, see the catch at the bottom of this file) ends
+  // up in the buffer the Logs panel reads from.
+  const logStore = new LogStore();
+  logStore.attachToConsole();
+
   const app = express();
   app.use(express.static(FRONTEND_DIST));
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // System-only facts for the Logs panel's "Export diagnostics" - nothing
+  // machine/settings/plugin-specific lives here, that's assembled client-side
+  // from state the frontend already has (and can redact plugin secrets from
+  // using each plugin's own schema, which the backend doesn't need to repeat).
+  app.get('/api/diagnostics', (_req, res) => {
+    res.json({
+      appVersion: APP_VERSION,
+      node: process.version,
+      platform: os.type(),
+      release: os.release(),
+      arch: os.arch(),
+      uptimeSeconds: Math.round(process.uptime()),
+    });
+  });
 
   const connection = new FluidNCConnection();
   connection.on('raw', (line: string) => console.log('<<', line));
@@ -22,7 +49,7 @@ async function main() {
     console.log(`fluidnc-webcontrol listening on http://0.0.0.0:${PORT}`);
   });
 
-  const { pluginLoader, broadcastPlugins } = await attachWebSocketServer(server, connection, app);
+  const { pluginLoader, broadcastPlugins } = await attachWebSocketServer(server, connection, app, logStore);
 
   // Raw zip upload - deliberately not JSON, and capped well above any
   // reasonable plugin's size so a malformed upload fails fast instead of
