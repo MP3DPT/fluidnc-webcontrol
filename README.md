@@ -10,6 +10,10 @@ This project is an independent community effort and is not affiliated with or en
 |---|---|---|
 | ![Main screen](docs/screenshots/main-screen.png) | ![File Manager](docs/screenshots/file-manager.png) | ![Plugins](docs/screenshots/plugins.png) |
 
+| Settings | Logs |
+|---|---|
+| ![Settings](docs/screenshots/settings.png) | ![Logs](docs/screenshots/logs.png) |
+
 ## Demo
 
 ![Demo: connect, browse the sidebar, load a job, and run it on real FluidNC hardware](docs/screenshots/demo.gif)
