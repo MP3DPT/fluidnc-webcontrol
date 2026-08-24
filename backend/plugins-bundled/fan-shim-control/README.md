@@ -17,4 +17,4 @@ Temperature is read from `/sys/class/thermal/thermal_zone0/temp`, which is stand
 
 ## Configuring the plugin
 
-In the app: **Plugins → Fan SHIM Control → Configure**, set "Turn on at" and "Turn off at" temperatures. Keep "Turn off at" comfortably below "Turn on at" — that gap (hysteresis) is what stops the fan rapidly clicking on and off right at one temperature. Use **Check Temp & Fan State** to confirm it's reading correctly, and **Test: Force Fan On/Off** to confirm GPIO control actually works before relying on the automatic thresholds.
+In the app: **Plugins → Fan SHIM Control → Configure**, set "Turn on at" and "Turn off at" temperatures. Keep "Turn off at" comfortably below "Turn on at" — that gap (hysteresis) is what stops the fan rapidly clicking on and off right at one temperature. Use **Check Temp & Fan State** to confirm it's reading correctly, and **Test: Force Fan On** / **Test: Force Fan Off** to confirm GPIO control actually works before relying on the automatic thresholds.
