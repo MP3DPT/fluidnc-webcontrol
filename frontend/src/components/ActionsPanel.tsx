@@ -4,7 +4,7 @@ import { EmergencyStopButton } from './EmergencyStopButton';
 
 interface Props {
   disabled: boolean;
-  /** Whether the e-stop should be active (a program is running) rather than muted/disabled. */
+  /** Whether the e-stop should be active (the connection is open) rather than muted/disabled. */
   estopActive: boolean;
   send: (message: Record<string, unknown>) => void;
 }

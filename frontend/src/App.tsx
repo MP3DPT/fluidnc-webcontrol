@@ -66,7 +66,17 @@ export default function App() {
   );
   const metadataSummary = useMemo(() => formatMetadataSummary(extractMetadata(gcodeText)), [gcodeText]);
 
+  // Every load path (the button, double-click, drag-drop, File Manager)
+  // funnels through here on purpose - it's the one place that must refuse
+  // to load while a program is running/paused. The backend's own runner.load()
+  // refuses too, but by then the UI has already swapped to the new file's
+  // name/toolpath while the old one may still be streaming - catching it
+  // here keeps what's displayed honest even before the backend responds.
   const applyLoadedFile = (name: string, text: string) => {
+    if (programStatus.state === 'running' || programStatus.state === 'paused') {
+      window.alert('A program is currently running - stop it before loading a new file.');
+      return;
+    }
     setFileName(name);
     setGcodeText(text);
     send({ type: 'loadProgram', name, gcode: text });
@@ -201,7 +211,7 @@ export default function App() {
         <div className="column">
           <ConnectPanel ports={ports} connectionOpen={connectionOpen} wsReady={wsReady} send={send} />
           <StatusPanel status={status} />
-          <ActionsPanel disabled={controlsDisabled} estopActive={programRunning} send={send} />
+          <ActionsPanel disabled={controlsDisabled} estopActive={connectionOpen} send={send} />
           <PluginPanels
             plugins={plugins}
             column="left"

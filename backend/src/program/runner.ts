@@ -39,6 +39,15 @@ export class ProgramRunner extends EventEmitter {
   }
 
   load(gcodeText: string, name: string) {
+    // A running/paused run() loop is actively reading this.lines/this.index
+    // between awaits - replacing them out from under it desyncs the loop's
+    // notion of "current line" from what's actually loaded, so it keeps
+    // sending lines from the new file at stale indices to a machine the UI
+    // no longer shows as streaming. stop() (which zeroes runToken/index)
+    // must happen first.
+    if (this.state === 'running' || this.state === 'paused') {
+      throw new Error('A program is currently running - stop it before loading a new file');
+    }
     this.lines = toLines(gcodeText);
     this.index = 0;
     this.state = 'idle';

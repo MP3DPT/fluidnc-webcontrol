@@ -70,7 +70,7 @@ export function ProgramPanel({
             e.target.value = '';
           }}
         />
-        <button onClick={() => fileInputRef.current?.click()} disabled={disabled}>
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled || isActive}>
           <FileUp size={15} />
           Load File…
         </button>

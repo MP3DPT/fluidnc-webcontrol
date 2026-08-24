@@ -1,7 +1,12 @@
 import { OctagonX } from 'lucide-react';
 
 interface Props {
-  /** True only while a program is actively running - the one time an e-stop mid-motion actually matters. */
+  /**
+   * Whether the e-stop should be live rather than muted/disabled. Tied to
+   * the connection being open, not to whether a *file* is streaming - jogging,
+   * homing, and manual G-code from the Console can all cause real motion too,
+   * and the e-stop needs to be available for all of them, not just streaming.
+   */
   active: boolean;
   send: (message: Record<string, unknown>) => void;
 }
