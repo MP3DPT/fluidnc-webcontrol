@@ -109,6 +109,13 @@ echo "==> Clearing /tmp"
 # an already-running script's own file open regardless of what happens to
 # its directory entry.
 rm -rf /tmp/*
+# cd out of /tmp in case that's where this checkout lives - the running
+# script itself keeps working regardless (Linux keeps its open file handle
+# valid), but leaving $PWD pointed at a directory entry that no longer
+# exists makes any subsequent subprocess that calls getcwd() (confirmed:
+# systemctl below did) print a harmless but ugly "No such file or
+# directory" warning.
+cd /
 
 echo "==> Re-enabling ssh for the real first boot"
 systemctl enable ssh
