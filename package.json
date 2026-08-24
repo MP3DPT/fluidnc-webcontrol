@@ -12,7 +12,9 @@
     "build:backend": "npm run build -w backend",
     "dev:frontend": "npm run dev -w frontend",
     "build:frontend": "npm run build -w frontend",
-    "start": "npm run build:frontend && npm run build:backend && npm run start -w backend"
+    "start": "npm run build:frontend && npm run build:backend && npm run start -w backend",
+    "sync-plugins": "node scripts/sync-plugins.mjs",
+    "sync-plugins:check": "node scripts/sync-plugins.mjs --check"
   },
   "license": "MIT"
 }

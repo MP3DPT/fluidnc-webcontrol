@@ -64,6 +64,8 @@ Shipped today:
 
 Writing your own: a plugin gets a `PluginContext` — the serial connection, the program runner, its own settings store, `registerBeforeRun`/`registerAction` hooks, and its own Express router under `/api/plugins/<id>`. Any folder under [`plugins/`](plugins) is a working example; `backend/src/plugins/types.ts` has the exact interface.
 
+If you're editing one of *this repo's own bundled* plugins, run `npm run sync-plugins` afterward - `plugins/<id>/` is just the editable source, and both `plugins/<id>.zip` (what Browse actually installs) and `backend/plugins-bundled/<id>/` (what a fresh install copies in) are separate generated copies that won't update themselves. `npm run sync-plugins:check` (non-destructive) is what CI/a pre-commit hook would run to catch a forgotten sync.
+
 ## Running it on a Raspberry Pi
 
 ### Pre-flashed SD card image (fastest)
