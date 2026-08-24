@@ -6,3 +6,4 @@ build/
 .DS_Store
 .claude/settings.local.json
 backups/
+traffic-log.local.md
