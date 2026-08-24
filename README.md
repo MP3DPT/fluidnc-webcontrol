@@ -48,6 +48,16 @@ The backend owns the serial connection and speaks FluidNC's line protocol direct
 
 The command queue in `backend/src/serial/connection.ts` sends one line and waits for FluidNC's `ok`/`error` before sending the next. This is the conservative version of the Grbl streaming protocol — slower than character-counting streaming, but it cannot overrun the controller's planner buffer, which is the class of bug that has affected other senders paired with FluidNC. Optimizing this later (character-counting protocol) is a good first contribution once the basics are proven solid.
 
+## Hardware
+
+Built and tested on a **Raspberry Pi 4**, paired with a PiBot V4.96 PRO (FluidNC) controller board over USB serial — but works with any FluidNC-based controller and machine: routers, mills, laser or plasma setups.
+
+The pre-flashed image is **64-bit** Raspberry Pi OS (confirmed `aarch64` on the hardware it's tested on), which matters for older/smaller boards:
+
+- **Raspberry Pi 3** — architecturally compatible (64-bit-capable Cortex-A53), untested by us but the backend is lightweight (Node.js/Express/WebSockets) and expected to run the whole app comfortably.
+- **Raspberry Pi Zero 2 W** — a different, newer board than the original Zero W: quad-core, same chip family as the Pi 3, also 64-bit-capable. Untested by us; plausible for the core app (jog/stream/monitor), but its 512MB RAM (half the Pi 3's 1GB) is reason enough to skip the webcam plugin there.
+- **Original Raspberry Pi Zero W will not work at all.** Its single-core ARMv6 chip has no 64-bit support, so this image simply won't boot — not a performance limitation, an architecture one.
+
 ## Plugins
 
 Anything FluidNC can't know about your specific shop — a cooling fan, a phone notification, a smart plug wired to the spindle, a webcam — lives in a plugin instead of the core app. A plugin is just a folder with a `plugin.json` manifest and an entry module, loaded from `~/.fluidnc-webcontrol/plugins` at runtime (see `backend/src/plugins/loader.ts`); installing one is a normal in-app action, no rebuild or restart needed.

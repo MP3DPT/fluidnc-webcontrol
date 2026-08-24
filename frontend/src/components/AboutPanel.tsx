@@ -91,10 +91,17 @@ export function AboutPanel({ latestVersion }: Props) {
         <p className="hint">
           Built and tested on a Raspberry Pi 4, paired with a PiBot V4.96 PRO (FluidNC) controller board over USB
           serial - but works with any FluidNC-based controller and machine: routers, mills, laser or plasma setups.
-          The backend itself is lightweight (Node.js, Express, WebSockets - nothing heavy), so a Pi 3 is expected to
-          run it just as comfortably - untested, not confirmed yet. A Pi Zero W is likewise untested but should
-          still work for the core app - jogging, streaming G-code, monitoring. Its single core and 512MB RAM are the
-          reason not to run the webcam plugin on it, though; save that one for a Pi 3 or 4.
+        </p>
+        <p className="hint">
+          The pre-flashed image is 64-bit Raspberry Pi OS (confirmed: <code>aarch64</code> on the actual hardware
+          it's tested on), which rules out the <strong>original Raspberry Pi Zero W</strong> entirely - its
+          single-core ARMv6 chip has no 64-bit support at all, so the image simply won't boot, not a performance
+          question. The <strong>Raspberry Pi Zero 2 W</strong> is a different, later board with a quad-core chip
+          from the same family as the Pi 3, and is architecturally compatible - genuinely untested by us, but the
+          backend itself is lightweight (Node.js, Express, WebSockets), so the core app (jogging, streaming G-code,
+          monitoring) is plausible there. Its 512MB RAM (half the Pi 3's 1GB) is reason enough to skip the webcam
+          plugin on it regardless - save that one for a Pi 3 or 4. The Pi 3 itself is likewise untested but expected
+          to run the whole app just as comfortably as the Pi 4 it was actually built on.
         </p>
       </div>
 
