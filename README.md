@@ -78,6 +78,8 @@ This is the whole setup: Node.js via nvm, the `dialout` group for serial access,
 
 Then connect the PiBot via USB and open `http://<pi-ip-address>:8000` from any browser on the network.
 
+Want to try it out before running a real job? [`samples/gcode_test.gcode`](samples/gcode_test.gcode) is a small, safe test cut - good for a first Run, or for checking a plugin fires correctly.
+
 ### Manual install
 
 If you'd rather not run the installer (or want it as a one-off foreground process instead of a systemd service):
