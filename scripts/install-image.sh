@@ -105,11 +105,23 @@ echo "==> Installing guaranteed SSH host key regeneration"
 # ssh-keygen -A is already idempotent (only creates whichever key types are
 # actually missing), so running it unconditionally before every ssh.service
 # start is always safe, not just on the first boot after imaging.
+#
+# Before=ssh.service alone isn't enough to guarantee this runs early enough:
+# confirmed on a test image that a plain Before= (with default dependency
+# ordering) can still let ssh.service/sshswitch.service win the race. This
+# mirrors the distro's own regenerate_ssh_host_keys.service instead:
+# DefaultDependencies=no plus an explicit After=systemd-remount-fs.service,
+# so it's guaranteed to run once /etc is writable but without waiting on the
+# rest of sysinit - and WantedBy=sysinit.target (not multi-user.target) pulls
+# it in during that same early stage, well ahead of ssh.service.
 KEYGEN_SERVICE=/etc/systemd/system/fluidnc-ssh-keygen.service
 cat > "$KEYGEN_SERVICE" <<'EOF'
 [Unit]
 Description=Ensure SSH host keys exist before sshd starts
-Before=ssh.service
+After=systemd-remount-fs.service
+Before=ssh.service sshswitch.service shutdown.target
+Conflicts=shutdown.target
+ConditionPathIsReadWrite=/etc
 DefaultDependencies=no
 
 [Service]
@@ -118,7 +130,7 @@ ExecStart=/usr/bin/ssh-keygen -A
 RemainAfterExit=yes
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=sysinit.target
 EOF
 systemctl daemon-reload
 systemctl enable fluidnc-ssh-keygen.service
