@@ -1,4 +1,4 @@
-# fluidnc-webcontrol v0.2.0 — Raspberry Pi SD card image
+# fluidnc-webcontrol v0.3.0 — Raspberry Pi SD card image
 
 A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and running as a system service — no manual install needed. Plug in your PiBot (or any FluidNC controller) over USB, flash this image, and you're up in a few minutes.
 
@@ -13,6 +13,15 @@ A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and
 
 Need WiFi instead of wired ethernet? SSH in over the wired connection first (or attach a monitor/keyboard) and run `sudo raspi-config` → System Options → Wireless LAN.
 
+## What's new since v0.2.0
+
+- **Two safety fixes**: loading a new G-code file while one was still streaming could desync the backend's send loop from what was actually loaded, silently sending the wrong lines to the machine; Emergency Stop was only active while a *file* was streaming, not during jogging, homing, or manual Console commands. Both fixed and confirmed on real hardware.
+- **Configurable jog step sizes** (Settings → Jog) — no longer a fixed 0.1/1/10/50mm list.
+- **Logs panel** (new sidebar icon) — backend/plugin errors and warnings, viewable without SSH, with a one-click **Export diagnostics** for bug reports (automatically redacts plugin credentials).
+- **Settings & plugin config backup/restore** (Settings → Backup & Restore) — export everything before reinstalling on a new device, or just to have a copy.
+- **In-app update notifications** for both the app itself and installed plugins — a small indicator when a newer version is available. Plugin updates are one click; an app update still means SSH + rerunning the install script, the same deliberate "not automated on your behalf" reasoning the install scripts have always had.
+- **GitHub link** on the About page.
+
 ## What's included
 
 - fluidnc-webcontrol running under a dedicated system service account (`fluidnc-webcontrol`), independent of whatever username you set — no manual setup, systemd service enabled and started automatically
@@ -21,10 +30,9 @@ Need WiFi instead of wired ethernet? SSH in over the wired connection first (or 
 
 ## Verified before release
 
-- Fresh install tested end-to-end against a real PiBot V4.96 PRO controller: connect, home, load a job, run to completion
-- Two plugin bugs found and fixed during testing (both previously touched hardware even while disabled): Fan SHIM Control and Webcam Preview now correctly stay inactive until you enable them
-- A crash bug in Smart Plug Control fixed — a lost connection to the smart plug no longer takes down the whole app, just that one action
-- Plugin browse/install-from-index feature confirmed working against the live public index
+- Fresh install tested end-to-end against a real PiBot V4.96 PRO controller: connect, home, load a job, run an air cut to completion
+- Settings backup exported from a working setup and restored cleanly onto this image
+- Image sanitization is now scripted (`scripts/sanitize-image.sh`) rather than a manual checklist, and independently verified after capture: no SSH host keys, no machine-id, no leftover credentials, `pi`/`raspberry` login working, checksum matches a full re-download
 
 ## Requirements
 

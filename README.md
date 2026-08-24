@@ -70,7 +70,7 @@ If you're editing one of *this repo's own bundled* plugins, run `npm run sync-pl
 
 ### Pre-flashed SD card image (fastest)
 
-Skip the install entirely: download the pre-flashed image from the [v0.2.0 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.2.0) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.2.0/fluidnc-webcontrol.img.xz), ~767MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
+Skip the install entirely: download the pre-flashed image from the [v0.3.0 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.3.0) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.3.0/fluidnc-webcontrol.img.xz), ~738MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
 
 - **Default login: `pi` / `raspberry` - change this password immediately after your first login** (`passwd`), same as you would for any device shipped with a known default.
 - After first boot, open `http://<pi-ip-address>:8000` from any browser on the network - no install step required.
