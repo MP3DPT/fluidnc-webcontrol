@@ -22,8 +22,8 @@ set -euo pipefail
 #   2. Creates a dedicated system account `fluidnc-webcontrol` with no
 #      login shell and no password - it only ever runs the service, it
 #      is never meant to be logged into
-#   3. Adds that account to the `dialout` and `video` groups (serial
-#      port and webcam access)
+#   3. Adds that account to the `dialout`, `video`, and `gpio` groups
+#      (serial port, webcam, and Fan SHIM GPIO access)
 #   4. Deploys the app to /opt/fluidnc-webcontrol and points its
 #      persistent data (settings, G-code library, installed plugins) at
 #      /var/lib/fluidnc-webcontrol via FLUIDNC_DATA_DIR
@@ -64,7 +64,7 @@ echo "==> Creating system account '$SERVICE_USER'"
 if ! id "$SERVICE_USER" >/dev/null 2>&1; then
   useradd --system --no-create-home --home-dir "$DATA_DIR" --shell /usr/sbin/nologin "$SERVICE_USER"
 fi
-usermod -a -G dialout,video "$SERVICE_USER"
+usermod -a -G dialout,video,gpio "$SERVICE_USER"
 
 echo "==> Deploying app to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
