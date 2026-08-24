@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings, Trash2, X } from 'lucide-react';
+import { ArrowUpCircle, Settings, Trash2, X } from 'lucide-react';
 import { Switch } from './ui/Switch';
 import type { PluginInfo, SchemaField } from '../types';
 
@@ -7,6 +7,10 @@ interface Props {
   plugin: PluginInfo;
   send: (message: Record<string, unknown>) => void;
   onUninstall: (id: string) => void;
+  /** Set only when the plugin index has a newer version than what's installed. */
+  latestVersion?: string;
+  onUpdate?: () => void;
+  updating?: boolean;
 }
 
 function matches(condition: Record<string, unknown> | undefined, config: Record<string, unknown>): boolean {
@@ -59,7 +63,7 @@ function DeferredInput({ type, value, placeholder, onCommit }: DeferredInputProp
   );
 }
 
-export function PluginCard({ plugin, send, onUninstall }: Props) {
+export function PluginCard({ plugin, send, onUninstall, latestVersion, onUpdate, updating }: Props) {
   const { manifest, schema, config } = plugin;
   const [configuring, setConfiguring] = useState(false);
 
@@ -160,6 +164,12 @@ export function PluginCard({ plugin, send, onUninstall }: Props) {
       <div className="plugin-card-title-row">
         <strong>{manifest.name}</strong>
         <div className="plugin-card-actions">
+          {latestVersion && (
+            <button onClick={onUpdate} disabled={updating} title={`Update to v${latestVersion}`}>
+              <ArrowUpCircle size={14} />
+              {updating ? 'Updating…' : `Update to v${latestVersion}`}
+            </button>
+          )}
           <button onClick={() => setConfiguring((v) => !v)}>
             {configuring ? <X size={14} /> : <Settings size={14} />}
             {configuring ? 'Close' : 'Configure'}

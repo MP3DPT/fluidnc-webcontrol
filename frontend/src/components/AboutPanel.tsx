@@ -1,10 +1,16 @@
-import { Coffee, GitFork } from 'lucide-react';
+import { ArrowUpCircle, Coffee, GitFork } from 'lucide-react';
+import { APP_VERSION, type LatestAppVersion } from '../version';
+
+interface Props {
+  /** null when up to date, offline, or the check hasn't resolved yet - see useLatestAppVersion(). */
+  latestVersion: LatestAppVersion | null;
+}
 
 /** Static "what is this app" blurb - its own sidebar destination, not folded into Settings. */
-export function AboutPanel() {
+export function AboutPanel({ latestVersion }: Props) {
   return (
     <div className="drawer-panel">
-      <h3>fluidnc-webcontrol v0.2.0</h3>
+      <h3>fluidnc-webcontrol v{APP_VERSION}</h3>
       <p className="hint">
         A free, open-source web control interface for FluidNC CNC controllers - jog, stream G-code, probe, and
         monitor a machine from any browser on the network.
@@ -18,6 +24,25 @@ export function AboutPanel() {
         <GitFork size={15} />
         github.com/MP3DPT/fluidnc-webcontrol
       </a>
+
+      {latestVersion && (
+        <div className="about-update-banner">
+          <ArrowUpCircle size={16} />
+          <div>
+            <strong>Update available: v{latestVersion.version}</strong>
+            <p className="hint">
+              This app doesn't update itself - deliberately, same reason install.sh/install-image.sh are things you
+              run yourself, not something done on your behalf, since applying it touches systemd. SSH into the Pi
+              and run the same install command from{' '}
+              <a href={latestVersion.url} target="_blank" rel="noopener noreferrer">
+                the release notes
+              </a>{' '}
+              again - see the README's "Running it on a Raspberry Pi" section for the exact command for your install
+              type.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="settings-section">
         <h4>Why this exists</h4>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 import type { PluginInfo } from '../types';
+import { isNewerVersion } from '../version';
 import { PluginCard } from './PluginCard';
 
 interface Props {
@@ -94,6 +95,17 @@ export function PluginsManagerPanel({ plugins, send }: Props) {
 
   const installedIds = new Set(plugins.map((p) => p.manifest.id));
   const browsable = available.filter((entry) => !installedIds.has(entry.id));
+  // id -> the index's entry, but only for an installed plugin whose index
+  // version is actually newer - reusing installFromIndex to apply it is
+  // safe because loader.ts's install() already replaces an existing
+  // directory wholesale, same as a fresh install.
+  const updatesById = new Map<string, AvailablePlugin>();
+  for (const plugin of plugins) {
+    const entry = available.find((e) => e.id === plugin.manifest.id);
+    if (entry && isNewerVersion(entry.version, plugin.manifest.version)) {
+      updatesById.set(plugin.manifest.id, entry);
+    }
+  }
 
   return (
     <div className="drawer-panel">
@@ -117,9 +129,20 @@ export function PluginsManagerPanel({ plugins, send }: Props) {
 
       {plugins.length === 0 && <p className="hint">No plugins installed yet.</p>}
 
-      {plugins.map((plugin) => (
-        <PluginCard key={plugin.manifest.id} plugin={plugin} send={send} onUninstall={uninstallPlugin} />
-      ))}
+      {plugins.map((plugin) => {
+        const update = updatesById.get(plugin.manifest.id);
+        return (
+          <PluginCard
+            key={plugin.manifest.id}
+            plugin={plugin}
+            send={send}
+            onUninstall={uninstallPlugin}
+            latestVersion={update?.version}
+            updating={installingId === plugin.manifest.id}
+            onUpdate={update ? () => installFromIndex(update) : undefined}
+          />
+        );
+      })}
 
       <input
         ref={fileInputRef}

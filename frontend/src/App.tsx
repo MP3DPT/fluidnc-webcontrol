@@ -16,6 +16,7 @@ import { AppSettingsPanel } from './components/AppSettingsPanel';
 import { AboutPanel } from './components/AboutPanel';
 import { ProgramPanel } from './components/ProgramPanel';
 import { LogsPanel } from './components/LogsPanel';
+import { APP_VERSION, useLatestAppVersion } from './version';
 import { ToolpathPreview3D, type ToolpathPreviewHandle } from './components/ToolpathPreview3D';
 import { ConsolePanel } from './components/ConsolePanel';
 import { FileManagerPanel } from './components/FileManagerPanel';
@@ -53,6 +54,7 @@ export default function App() {
   } = useSocket();
   const controlsDisabled = !connectionOpen;
   const programRunning = programStatus.state === 'running';
+  const latestAppVersion = useLatestAppVersion();
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [gcodeText, setGcodeText] = useState('');
@@ -142,7 +144,8 @@ export default function App() {
           { key: 'logs', icon: <ScrollText size={22} />, label: 'Logs' },
         ]}
         footerItems={[{ key: 'about', icon: <Info size={22} />, label: 'About' }]}
-        version="v0.2.0"
+        version={`v${APP_VERSION}`}
+        updateAvailable={latestAppVersion !== null}
         active={activePanel}
         onSelect={(key) => setActivePanel((prev) => (prev === key ? null : key))}
       />
@@ -171,7 +174,7 @@ export default function App() {
       </Drawer>
 
       <Drawer open={activePanel === 'about'} title="About" onClose={() => setActivePanel(null)}>
-        <AboutPanel />
+        <AboutPanel latestVersion={latestAppVersion} />
       </Drawer>
 
       <div

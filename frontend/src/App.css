@@ -182,6 +182,30 @@ h1, h2, h3, h4, p {
   opacity: 0.6;
 }
 
+.side-rail-version-update {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--warning);
+  opacity: 1;
+}
+
+.side-rail-version-update:hover {
+  text-decoration: underline;
+}
+
+.side-rail-version-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--warning);
+  flex-shrink: 0;
+}
+
 .side-rail-button {
   display: flex;
   flex-direction: column;
@@ -1108,6 +1132,27 @@ button.ghost:not(:disabled):hover {
 .about-github-link:hover {
   color: var(--primary);
   text-decoration: underline;
+}
+
+.about-update-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--warning);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.about-update-banner svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.about-update-banner .hint {
+  color: var(--text-secondary);
+  margin: 0.25rem 0 0;
 }
 
 .about-coffee-link {
