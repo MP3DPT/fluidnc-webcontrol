@@ -72,6 +72,7 @@ Skip the install entirely: download the pre-flashed image from the [v0.2.0 relea
 
 - **Default login: `pi` / `raspberry` - change this password immediately after your first login** (`passwd`), same as you would for any device shipped with a known default.
 - After first boot, open `http://<pi-ip-address>:8000` from any browser on the network - no install step required.
+- That `pi` login is just for SSH/console access to the Pi itself - the app runs under its own dedicated system account, so renaming `pi`, changing its password, or switching to key-only SSH afterward won't affect the web UI at all.
 
 See [docs/building-the-image.md](docs/building-the-image.md) if you want to build this image yourself instead of trusting the published one.
 
