@@ -136,10 +136,14 @@ What it does, and why each part matters:
   local keys, ntfy topics, or test G-code files should ship; the app
   recreates all of this fresh on its next start, so nothing needs to
   pre-exist.
-- **Clears `/tmp`.** Confirmed the hard way: it's part of the persistent
-  root filesystem on this OS, not tmpfs - a git clone left there from
-  running this script or `install-image.sh` (step 2 doesn't dictate where
-  you clone to) survives right into the captured image otherwise.
+- **Clears `/tmp`** - belt-and-suspenders rather than a fix for an actual
+  bug: `/tmp` is tmpfs on the standard Raspberry Pi OS image this project
+  targets, so it's RAM-backed and already resets on every reboot on its
+  own. A leftover clone from running this script or `install-image.sh`
+  (step 2 doesn't dictate where you clone to) was never actually going to
+  survive into a `dd` capture of the powered-off card - clearing it
+  explicitly just costs nothing and covers any environment where that
+  assumption doesn't hold.
 - **Re-enables `ssh`** for the real first boot (it gets stopped, not
   disabled, partway through - it just won't have working host keys until
   that first boot regenerates them).

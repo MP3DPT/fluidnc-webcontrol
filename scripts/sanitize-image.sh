@@ -97,16 +97,17 @@ rm -f /var/lib/fluidnc-webcontrol/.npm_update-notifier-last-checked
 # FileLibraryStore already use for a normal fresh install).
 
 echo "==> Clearing /tmp"
-# Confirmed the hard way: install-image.sh's own docs (step 2) have you
-# clone straight into wherever you happen to be, and /tmp is the obvious
-# throwaway choice - except on this OS it's part of the persistent root
-# filesystem, not tmpfs, so it survives right into the captured image if
-# nothing clears it. install-image.sh copies source into /opt *before*
-# running npm install/build there, so a leftover clone itself isn't huge,
-# but there's no reason to ship it (or anything else stashed in /tmp)
-# at all. This runs from a cloned checkout too - safe even if that
-# checkout happens to be under /tmp, since Linux keeps an already-running
-# script's own file open regardless of what happens to its directory entry.
+# Belt-and-suspenders, not a fix for an actual bug: confirmed /tmp is
+# tmpfs on the standard Raspberry Pi OS image this project targets (`mount
+# | grep /tmp`), meaning it's RAM-backed and already resets on every
+# reboot on its own - a clone left there from running install-image.sh or
+# this script (step 2 doesn't dictate where you clone to) was never
+# actually going to survive into a `dd` capture of the powered-off card.
+# Clearing it explicitly costs nothing and covers any environment where
+# that assumption doesn't hold. This runs from a cloned checkout too -
+# safe even if that checkout happens to be under /tmp, since Linux keeps
+# an already-running script's own file open regardless of what happens to
+# its directory entry.
 rm -rf /tmp/*
 
 echo "==> Re-enabling ssh for the real first boot"
