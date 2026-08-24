@@ -106,5 +106,18 @@ if [ "$DO_SHUTDOWN" = true ]; then
   sleep 10
   shutdown -h now
 else
-  echo "==> --no-shutdown was passed - run 'sudo shutdown -h now' yourself when ready to pull the card."
+  # Confirmed the hard way: without this, --no-shutdown locks you out over
+  # SSH immediately (ssh.service was just stopped, with no host keys, and
+  # only enabled for the *next* boot - which --no-shutdown deliberately
+  # skips) - defeating the entire point of this flag, which is staying
+  # reachable to inspect the result before committing to power-off. This
+  # is test-mode-only: it must NEVER run in the real (shutdown) path, since
+  # shipping an image with host keys already regenerated here - instead of
+  # genuinely fresh on each downloader's own first boot - is exactly the
+  # MITM exposure step 4 exists to prevent.
+  echo "==> --no-shutdown: restarting ssh now (with freshly regenerated keys) so you can keep inspecting over SSH."
+  ssh-keygen -A
+  systemctl start ssh
+  echo "==> --no-shutdown was passed - these are TEST keys, not what a real capture would ship."
+  echo "==> Run 'sudo shutdown -h now' yourself when ready to pull the card for a real build."
 fi
