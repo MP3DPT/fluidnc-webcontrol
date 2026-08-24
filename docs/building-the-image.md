@@ -6,16 +6,30 @@ no manual install. If you just want to run the app on your own Pi, use
 [`scripts/install.sh`](../scripts/install.sh) instead - this document is
 only for building the image other people download.
 
-The image must ship with **no trace of the machine it was built on**: no
-personal account, no SSH host keys, no secrets, no personal G-code files.
-Everything below exists to guarantee that.
+The image must ship with **no trace of the machine it was built on** - no
+*personal* account, no SSH host keys, no secrets, no personal G-code files -
+but it does ship with one documented, fixed login: `pi` / `raspberry`, SSH
+enabled by default. That's a deliberate, informed choice, not an oversight:
+the alternative (rely on Raspberry Pi Imager to inject a fresh per-user
+account at flash time) turned out to be unreliable in practice - Imager's
+own OS-customization feature has known, currently-unresolved bugs on recent
+Raspberry Pi OS releases (cloud-init-based Trixie images in particular),
+and burned a lot of build time chasing Imager-version and cloud-init
+quirks before this project settled on the same tradeoff OctoPi has long
+made: a known default is simpler and more reliable than a customization
+mechanism that doesn't reliably work, as long as it's loudly documented
+(see the README's setup instructions) rather than left as a silent trap.
+Everything below still guarantees there's no trace of *this specific build
+machine* - the fixed account is intentional, everything else is not.
 
 ## 1. Start from a clean Raspberry Pi OS install
 
-Flash the latest Raspberry Pi OS Lite (64-bit) to a card, boot it, and do
-**not** create a personal account you plan to keep around - either use
-Imager's customization to create a throwaway build account you'll delete
-later, or use the on-device first-boot wizard the same way.
+Flash the latest Raspberry Pi OS Lite (64-bit) to a card and boot it. The
+account you create here (via Imager's customization, or manually - see
+step 3 for the manual fallback if customization doesn't take, which is a
+real possibility on current Trixie-based images) doesn't need to be
+`pi`/`raspberry` yet; it just needs SSH access so you can run the next
+steps. It becomes the documented default in step 3.
 
 ## 2. Deploy the app under its own system account
 
@@ -37,24 +51,33 @@ connect to a real controller if you have one handy, confirm the service
 survives a reboot (`sudo reboot`, then check `systemctl status
 fluidnc-webcontrol`).
 
-## 3. Remove your own account
+## 3. Set the account to the documented default
 
-Whatever personal/build account you used in step 1 must not survive into
-the image - it's either a real login with your credentials, or a
-predictable default, and neither belongs in something the public
-downloads.
+Whatever personal/build account you used in step 1 needs to end up as
+exactly `pi` with password `raspberry` - the same pair the README and
+release notes tell downloaders about, no more and no less.
 
 ```bash
 # Confirm exactly what personal accounts exist (UID 1000-65533)
 awk -F: '$3 >= 1000 && $3 < 65534 {print $1, $3, $6}' /etc/passwd
 
-# For each one:
-sudo deluser --remove-home <username>
+# If the build account isn't already named "pi", rename it (and its home dir)
+sudo usermod -l pi -d /home/pi -m <old-username>
+sudo groupmod -n pi <old-username>
+
+# Set the documented password
+echo 'pi:raspberry' | sudo chpasswd
+
+# Remove YOUR OWN key from authorized_keys - it's yours, not the documented
+# default, and leaving it in would be an actual unintended backdoor into
+# every device flashed from this image
+sudo truncate -s 0 /home/pi/.ssh/authorized_keys
 ```
 
-Do this over a console/serial connection if possible, not the SSH session
-running as that account - deleting your own logged-in account out from
-under an SSH session works but is more fragile than doing it from outside.
+Confirm `ssh_pwauth`/`PasswordAuthentication` is enabled in
+`/etc/ssh/sshd_config` (it should be, by default, unless something in your
+build process disabled it) - password auth is how downloaders actually log
+in with the documented credentials.
 
 ## 4. Regenerate SSH host keys on next boot instead of shipping fixed ones
 
@@ -139,9 +162,10 @@ the release notes:
 
 - Flash with [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
   using "Use custom" to select the `.img.xz` directly (it decompresses
-  automatically)
-- Use Imager's OS customization (Ctrl+Shift+X) to set a username,
-  password, and enable SSH before first boot - the image ships with no
-  account and no password at all, by design
+  automatically) - no OS customization step needed, the image already has
+  working SSH
+- **Default login: `pi` / `raspberry` - change this password immediately
+  after your first login** (`passwd`), same as you would for any device
+  shipped with a known default
 - After first boot, open `http://<pi-ip>:8000` from any browser on the
   network
