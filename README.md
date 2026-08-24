@@ -66,7 +66,16 @@ Writing your own: a plugin gets a `PluginContext` — the serial connection, the
 
 ## Running it on a Raspberry Pi
 
-### Quick install (recommended)
+### Pre-flashed SD card image (fastest)
+
+Skip the install entirely: download the pre-flashed image from the [v0.2.0 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.2.0) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.2.0/fluidnc-webcontrol.img.xz), ~767MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
+
+- **Default login: `pi` / `raspberry` - change this password immediately after your first login** (`passwd`), same as you would for any device shipped with a known default.
+- After first boot, open `http://<pi-ip-address>:8000` from any browser on the network - no install step required.
+
+See [docs/building-the-image.md](docs/building-the-image.md) if you want to build this image yourself instead of trusting the published one.
+
+### Quick install (on your own Pi OS install)
 
 ```bash
 git clone https://github.com/MP3DPT/fluidnc-webcontrol.git
