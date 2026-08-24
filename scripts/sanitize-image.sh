@@ -90,11 +90,24 @@ apt-get clean
 echo "==> Wiping fluidnc-webcontrol's saved state"
 rm -f /var/lib/fluidnc-webcontrol/settings.json
 rm -rf /var/lib/fluidnc-webcontrol/gcode-library
-rm -rf /var/lib/fluidnc-webcontrol/.npm_cache /var/lib/fluidnc-webcontrol/.npm_logs
+rm -rf /var/lib/fluidnc-webcontrol/.npm /var/lib/fluidnc-webcontrol/.npm_cache /var/lib/fluidnc-webcontrol/.npm_logs
 rm -f /var/lib/fluidnc-webcontrol/.npm_update-notifier-last-checked
 # Everything above is recreated with defaults on the app's next start -
 # nothing needs to pre-exist (same self-healing pattern SettingsStore and
 # FileLibraryStore already use for a normal fresh install).
+
+echo "==> Clearing /tmp"
+# Confirmed the hard way: install-image.sh's own docs (step 2) have you
+# clone straight into wherever you happen to be, and /tmp is the obvious
+# throwaway choice - except on this OS it's part of the persistent root
+# filesystem, not tmpfs, so it survives right into the captured image if
+# nothing clears it. install-image.sh copies source into /opt *before*
+# running npm install/build there, so a leftover clone itself isn't huge,
+# but there's no reason to ship it (or anything else stashed in /tmp)
+# at all. This runs from a cloned checkout too - safe even if that
+# checkout happens to be under /tmp, since Linux keeps an already-running
+# script's own file open regardless of what happens to its directory entry.
+rm -rf /tmp/*
 
 echo "==> Re-enabling ssh for the real first boot"
 systemctl enable ssh

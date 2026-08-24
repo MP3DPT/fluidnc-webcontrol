@@ -136,6 +136,10 @@ What it does, and why each part matters:
   local keys, ntfy topics, or test G-code files should ship; the app
   recreates all of this fresh on its next start, so nothing needs to
   pre-exist.
+- **Clears `/tmp`.** Confirmed the hard way: it's part of the persistent
+  root filesystem on this OS, not tmpfs - a git clone left there from
+  running this script or `install-image.sh` (step 2 doesn't dictate where
+  you clone to) survives right into the captured image otherwise.
 - **Re-enables `ssh`** for the real first boot (it gets stopped, not
   disabled, partway through - it just won't have working host keys until
   that first boot regenerates them).
