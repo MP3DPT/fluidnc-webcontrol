@@ -6,7 +6,7 @@ A free, open-source (MIT), community-driven web control UI for [FluidNC](https:/
 
 This project is an independent community effort and is not affiliated with or endorsed by the FluidNC project, Bart Dring, or any controller manufacturer.
 
-> **Before you start:** your controller must already be running FluidNC firmware with a working `config.yaml` for your machine. This is a web control interface for an *existing, already-configured* FluidNC setup — it does not flash firmware or write machine configuration for you. Haven't set that up yet? See [FluidNC's own documentation](https://github.com/bdring/FluidNC/wiki) first.
+> **Before you start:** your controller must already be running FluidNC firmware with a working `config.yaml` for your machine. This is a web control interface for an *existing, already-configured* FluidNC setup — it does not flash firmware or write machine configuration for you. Haven't set that up yet? See [FluidNC's own documentation](http://wiki.fluidnc.com/en/home) first.
 
 | Main screen | File Manager | Plugins |
 |---|---|---|
