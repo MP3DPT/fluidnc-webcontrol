@@ -866,10 +866,87 @@ main {
   min-height: 0;
 }
 
-.toolpath-content > div:first-child {
+.toolpath-canvas-host {
   flex: 1;
   min-height: 0;
   display: flex;
+  /* Anchors .boundary-warning-overlay - it's positioned relative to the
+     canvas host, not the page, so it floats over the 3D view specifically
+     rather than the whole Toolpath card. */
+  position: relative;
+}
+
+/* Floats over the 3D canvas (see .toolpath-canvas-host's position:relative)
+   instead of a blocking window.alert - stays visible without dismissal, and
+   clears itself automatically once the job fits (see App.tsx's
+   boundaryWarning effect), no user action needed either way. */
+.boundary-warning-overlay {
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: calc(100% - var(--space-4) * 2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--warning);
+  background: var(--surface);
+  color: var(--warning);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.boundary-warning-overlay svg {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.boundary-warning-overlay strong {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-primary);
+}
+
+.boundary-warning-overlay p {
+  margin: var(--space-1) 0 0;
+}
+
+/* The one thing worth glancing at from across the room while a job runs -
+   ProgramPanel's own percent/remaining text is accurate but small, easy to
+   lose among the Run/Pause/Stop buttons. Same floating-over-the-canvas
+   treatment as .boundary-warning-overlay, opposite corner so the two never
+   collide (a boundary warning and an active job aren't mutually exclusive -
+   the warning was a load-time check, this only shows once actually
+   running/paused). */
+.job-progress-overlay {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary);
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.job-progress-percent {
+  font: var(--text-machine-value);
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.job-progress-remaining {
+  font: var(--text-machine-value-sm);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .plugin-panel-frame {

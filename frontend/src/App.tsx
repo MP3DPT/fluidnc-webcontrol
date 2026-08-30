@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, ScrollText, Settings as SettingsIcon, Terminal } from 'lucide-react';
+import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, ScrollText, Settings as SettingsIcon, Terminal, TriangleAlert } from 'lucide-react';
 import { useSocket } from './hooks/useSocket';
-import { parseToolpath } from './gcode/parseToolpath';
+import { parseToolpath, xyBoundsOf } from './gcode/parseToolpath';
 import { renderThumbnail } from './gcode/renderThumbnail';
 import { extractMetadata, formatMetadataSummary } from './gcode/extractMetadata';
-import { currentPassAt, elapsedSecondsAt, estimateTiming } from './gcode/estimateTime';
+import { currentPassAt, elapsedSecondsAt, estimateTiming, formatDuration } from './gcode/estimateTime';
 import { Header } from './components/Header';
 import { ConnectPanel } from './components/ConnectPanel';
 import { StatusPanel } from './components/StatusPanel';
@@ -22,6 +22,7 @@ import { ConsolePanel } from './components/ConsolePanel';
 import { FileManagerPanel } from './components/FileManagerPanel';
 import { Tabs } from './components/Tabs';
 import { Card, CardHeader, CardContent } from './components/ui/Card';
+import { Badge } from './components/ui/Badge';
 import { IconButton } from './components/ui/IconButton';
 import { Switch } from './components/ui/Switch';
 import { Sidebar } from './components/ui/Sidebar';
@@ -70,6 +71,14 @@ export default function App() {
   );
   const metadataSummary = useMemo(() => formatMetadataSummary(extractMetadata(gcodeText)), [gcodeText]);
 
+  // Duplicates ProgramPanel's own percent/isActive - deliberately, so this
+  // big at-a-glance readout over the Toolpath view (see jobProgressOverlay
+  // below) doesn't need ProgramPanel to lift state up just to share it.
+  // ProgramPanel keeps the detailed line-count/pass-count text; this is
+  // just the two numbers someone glances at from across the room.
+  const jobActive = programStatus.state === 'running' || programStatus.state === 'paused';
+  const jobPercent = programStatus.total > 0 ? Math.round((programStatus.sent / programStatus.total) * 100) : 0;
+
   // Every load path (the button, double-click, drag-drop, File Manager)
   // funnels through here on purpose - it's the one place that must refuse
   // to load while a program is running/paused. The backend's own runner.load()
@@ -85,6 +94,36 @@ export default function App() {
     setGcodeText(text);
     send({ type: 'loadProgram', name, gcode: text });
   };
+
+  // A heads-up, not a load-blocking safety check - the spoilboard size is
+  // optional (0 = not configured, see AppSettingsPanel's Working Area
+  // section) and even an oversized job might be intentional (e.g. only part
+  // of it actually needs to fit). Keyed on `segments` (not just on load) and
+  // on the spoilboard settings themselves, so this re-evaluates live if the
+  // user tweaks the working area size with a file already loaded, instead
+  // of only catching it on the next load. Rendered as a banner over the
+  // Toolpath preview rather than a blocking window.alert, so it stays
+  // visible without needing to be dismissed.
+  const [boundaryWarning, setBoundaryWarning] = useState<string | null>(null);
+  useEffect(() => {
+    const width = settings?.general.spoilboardWidth ?? 0;
+    const height = settings?.general.spoilboardHeight ?? 0;
+    const bounds = width > 0 || height > 0 ? xyBoundsOf(segments) : null;
+    if (!bounds) {
+      setBoundaryWarning(null);
+      return;
+    }
+    const sides: string[] = [];
+    if (width > 0) {
+      if (bounds.minX < 0) sides.push('X-');
+      if (bounds.maxX > width) sides.push('X+');
+    }
+    if (height > 0) {
+      if (bounds.minY < 0) sides.push('Y-');
+      if (bounds.maxY > height) sides.push('Y+');
+    }
+    setBoundaryWarning(sides.length > 0 ? `Toolpath exceeds the working area at ${sides.join(', ')}` : null);
+  }, [segments, settings?.general.spoilboardWidth, settings?.general.spoilboardHeight]);
 
   // Centralized so every way of picking a local file - the Program panel's
   // button, double-clicking the toolpath preview, or dragging a file onto
@@ -271,6 +310,7 @@ export default function App() {
             </CardHeader>
             <CardContent className="toolpath-content">
               <div
+                className="toolpath-canvas-host"
                 onDoubleClick={() => toolpathFileInputRef.current?.click()}
                 title="Double-click to load a G-code file"
               >
@@ -280,7 +320,28 @@ export default function App() {
                   currentPosition={workPosition}
                   sentLines={programStatus.sent}
                   aboveGrid={toolpathAboveGrid}
+                  spoilboardWidth={settings?.general.spoilboardWidth ?? 0}
+                  spoilboardHeight={settings?.general.spoilboardHeight ?? 0}
                 />
+                {boundaryWarning && (
+                  <div className="boundary-warning-overlay">
+                    <TriangleAlert size={16} />
+                    <div>
+                      <strong>
+                        Job Info <Badge tone="warning">Warning</Badge>
+                      </strong>
+                      <p className="hint">{boundaryWarning}</p>
+                    </div>
+                  </div>
+                )}
+                {jobActive && (
+                  <div className="job-progress-overlay">
+                    <div className="job-progress-percent">{jobPercent}%</div>
+                    <div className="job-progress-remaining">
+                      {formatDuration(timing.totalSeconds - elapsedSeconds)} left
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="toolpath-legend">
                 <span>Drag to orbit, scroll to zoom, right-drag to pan</span>

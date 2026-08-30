@@ -1,4 +1,4 @@
-# fluidnc-webcontrol v0.3.0 — Raspberry Pi SD card image
+# fluidnc-webcontrol v0.4.0 — Raspberry Pi SD card image
 
 A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and running as a system service — no manual install needed. Plug in your PiBot (or any FluidNC controller) over USB, flash this image, and you're up in a few minutes.
 
@@ -13,14 +13,13 @@ A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and
 
 Need WiFi instead of wired ethernet? SSH in over the wired connection first (or attach a monitor/keyboard) and run `sudo raspi-config` → System Options → Wireless LAN.
 
-## What's new since v0.2.0
+## What's new since v0.3.0
 
-- **Two safety fixes**: loading a new G-code file while one was still streaming could desync the backend's send loop from what was actually loaded, silently sending the wrong lines to the machine; Emergency Stop was only active while a *file* was streaming, not during jogging, homing, or manual Console commands. Both fixed and confirmed on real hardware.
-- **Configurable jog step sizes** (Settings → Jog) — no longer a fixed 0.1/1/10/50mm list.
-- **Logs panel** (new sidebar icon) — backend/plugin errors and warnings, viewable without SSH, with a one-click **Export diagnostics** for bug reports (automatically redacts plugin credentials).
-- **Settings & plugin config backup/restore** (Settings → Backup & Restore) — export everything before reinstalling on a new device, or just to have a copy.
-- **In-app update notifications** for both the app itself and installed plugins — a small indicator when a newer version is available. Plugin updates are one click; an app update still means SSH + rerunning the install script, the same deliberate "not automated on your behalf" reasoning the install scripts have always had.
-- **GitHub link** on the About page.
+- **Toolpath grid now adapts to the job** — no more fixed 400mm plane a bigger part just runs off the edge of. It expands automatically to fit whatever's loaded, with 20% breathing room around it.
+- **Machine (0,0) anchored at a corner of the grid**, not its center — matches where a machine's actual home position sits, especially for the common all-positive-work-coordinates case.
+- **Bold, numbered X/Y axis rulers** — solid colored lines through the origin with legible tick labels at a regular interval, so it's obvious at a glance exactly where a point sits relative to (0,0), not just "somewhere on the grid".
+- **Configurable working area** (Settings → Working Area) — set your spoilboard's actual size in mm and the grid switches to that fixed size instead of auto-fitting; loading a job that doesn't fit shows an on-screen warning naming which side(s) it exceeds. Optional — leave at 0 to keep the auto-fit behavior.
+- **Prominent job progress overlay** on the Toolpath view — a big, easy-to-spot percentage and time-remaining readout while a job is running or paused, instead of only the small text next to the Run/Pause/Stop buttons.
 
 ## What's included
 
@@ -30,9 +29,8 @@ Need WiFi instead of wired ethernet? SSH in over the wired connection first (or 
 
 ## Verified before release
 
-- Fresh install tested end-to-end against a real PiBot V4.96 PRO controller: connect, home, load a job, run an air cut to completion
-- Settings backup exported from a working setup and restored cleanly onto this image
-- Image sanitization is now scripted (`scripts/sanitize-image.sh`) rather than a manual checklist, and independently verified after capture: no SSH host keys, no machine-id, no leftover credentials, `pi`/`raspberry` login working, checksum matches a full re-download
+- All of the above verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
+- **Not yet re-verified against real PiBot hardware or re-captured as an image** - this section gets filled in with the real hardware/image checklist (same as every prior release) once this build is actually deployed and tested on the Pi
 
 ## Requirements
 

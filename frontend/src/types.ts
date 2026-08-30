@@ -79,6 +79,9 @@ export interface GeneralSettings {
   consoleAutoFeedEnabled: boolean;
   consoleDefaultFeed: number;
   jogStepSizes: number[];
+  /** Working area size in mm from machine (0,0); 0 = not configured, skip that axis's "job is bigger than the working area" check. See App.tsx's applyLoadedFile. */
+  spoilboardWidth: number;
+  spoilboardHeight: number;
 }
 
 /** A plugin's own flat settings bag - always has at least "enabled". */

@@ -18,6 +18,25 @@ export interface Segment {
   lineIndex: number;
 }
 
+/** Plain XY bounding box of a parsed toolpath - null for an empty path. Kept
+ * separate from ToolpathPreview3D's own THREE.Box3-based bounds helper so
+ * callers that just need "does this fit the working area" (e.g. App.tsx's
+ * spoilboard-size check) don't have to pull in three.js. */
+export function xyBoundsOf(segments: Segment[]): { minX: number; maxX: number; minY: number; maxY: number } | null {
+  if (segments.length === 0) return null;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const seg of segments) {
+    minX = Math.min(minX, seg.x1, seg.x2);
+    maxX = Math.max(maxX, seg.x1, seg.x2);
+    minY = Math.min(minY, seg.y1, seg.y2);
+    maxY = Math.max(maxY, seg.y1, seg.y2);
+  }
+  return { minX, maxX, minY, maxY };
+}
+
 interface ModalState {
   x: number;
   y: number;

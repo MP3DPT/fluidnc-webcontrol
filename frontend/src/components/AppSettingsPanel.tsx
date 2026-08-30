@@ -13,6 +13,8 @@ const FALLBACK_GENERAL: Settings['general'] = {
   consoleAutoFeedEnabled: true,
   consoleDefaultFeed: 300,
   jogStepSizes: [0.1, 1, 10, 50],
+  spoilboardWidth: 0,
+  spoilboardHeight: 0,
 };
 
 /** Parses "0.1, 1, 10, 50" into [0.1, 1, 10, 50] - drops anything non-numeric or <= 0, dedupes, sorts ascending. Returns null if nothing valid survives (caller should reject rather than persist an empty Step dropdown). */
@@ -31,6 +33,8 @@ export function AppSettingsPanel({ settings, send }: Props) {
   const [consoleDefaultFeed, setConsoleDefaultFeed] = useState(FALLBACK_GENERAL.consoleDefaultFeed);
   const [jogStepSizesText, setJogStepSizesText] = useState(FALLBACK_GENERAL.jogStepSizes.join(', '));
   const [jogStepSizesError, setJogStepSizesError] = useState(false);
+  const [spoilboardWidth, setSpoilboardWidth] = useState(FALLBACK_GENERAL.spoilboardWidth);
+  const [spoilboardHeight, setSpoilboardHeight] = useState(FALLBACK_GENERAL.spoilboardHeight);
   const [restoreMessage, setRestoreMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const generalInitialized = useRef(false);
   const restoreFileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +48,8 @@ export function AppSettingsPanel({ settings, send }: Props) {
       setConsoleAutoFeedEnabled(settings.general.consoleAutoFeedEnabled);
       setConsoleDefaultFeed(settings.general.consoleDefaultFeed);
       setJogStepSizesText(settings.general.jogStepSizes.join(', '));
+      setSpoilboardWidth(settings.general.spoilboardWidth ?? FALLBACK_GENERAL.spoilboardWidth);
+      setSpoilboardHeight(settings.general.spoilboardHeight ?? FALLBACK_GENERAL.spoilboardHeight);
     }
   }, [settings]);
 
@@ -111,6 +117,8 @@ export function AppSettingsPanel({ settings, send }: Props) {
         setConsoleAutoFeedEnabled(parsed.general.consoleAutoFeedEnabled ?? FALLBACK_GENERAL.consoleAutoFeedEnabled);
         setConsoleDefaultFeed(parsed.general.consoleDefaultFeed ?? FALLBACK_GENERAL.consoleDefaultFeed);
         setJogStepSizesText((parsed.general.jogStepSizes ?? FALLBACK_GENERAL.jogStepSizes).join(', '));
+        setSpoilboardWidth(parsed.general.spoilboardWidth ?? FALLBACK_GENERAL.spoilboardWidth);
+        setSpoilboardHeight(parsed.general.spoilboardHeight ?? FALLBACK_GENERAL.spoilboardHeight);
       }
       setRestoreMessage({ text: 'Backup restored.', isError: false });
     };
@@ -181,6 +189,47 @@ export function AppSettingsPanel({ settings, send }: Props) {
           Comma-separated, in mm - these become the Step dropdown's options in Jog Control. Needs at least one valid
           positive number{jogStepSizesError && ' - nothing valid found, keeping the last saved list'}.
         </p>
+      </div>
+
+      <div className="settings-section">
+        <h4>Working Area</h4>
+        <p className="hint">
+          Your spoilboard size in mm, measured from machine (0,0) - optional, just a heads-up. When set, loading a
+          file whose toolpath doesn't fit gets a warning that the job is bigger than the working area. Leave at 0 to
+          skip that check for an axis.
+        </p>
+        <label>
+          Width (X)
+          <span className="field-row">
+            <input
+              type="number"
+              min={0}
+              value={spoilboardWidth}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setSpoilboardWidth(v);
+                persistGeneral({ spoilboardWidth: v });
+              }}
+            />
+            <span>mm</span>
+          </span>
+        </label>
+        <label>
+          Height (Y)
+          <span className="field-row">
+            <input
+              type="number"
+              min={0}
+              value={spoilboardHeight}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setSpoilboardHeight(v);
+                persistGeneral({ spoilboardHeight: v });
+              }}
+            />
+            <span>mm</span>
+          </span>
+        </label>
       </div>
 
       <div className="settings-section">

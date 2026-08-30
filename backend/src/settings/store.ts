@@ -9,6 +9,13 @@ export interface GeneralSettings {
   consoleDefaultFeed: number;
   /** The Jog panel's Step dropdown options, in mm - user-configurable since the right increments vary a lot by job (0.01mm engraving vs. 100mm rapid repositioning). Always non-empty; kept sorted ascending. */
   jogStepSizes: number[];
+  /** Working area size in mm, measured from machine (0,0) - lets the "job is
+   * bigger than the working area" load-time check (see App.tsx's
+   * applyLoadedFile) know what to compare against. 0 means "not configured",
+   * i.e. skip that axis's check entirely - most users never need this, it's
+   * a just-in-case safety net, not a required setup step. */
+  spoilboardWidth: number;
+  spoilboardHeight: number;
 }
 
 /** Each plugin's own flat settings bag - always has at least "enabled". */
@@ -20,7 +27,13 @@ export interface Settings {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  general: { consoleAutoFeedEnabled: true, consoleDefaultFeed: 300, jogStepSizes: [0.1, 1, 10, 50] },
+  general: {
+    consoleAutoFeedEnabled: true,
+    consoleDefaultFeed: 300,
+    jogStepSizes: [0.1, 1, 10, 50],
+    spoilboardWidth: 0,
+    spoilboardHeight: 0,
+  },
   plugins: {},
 };
 

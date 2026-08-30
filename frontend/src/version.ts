@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 // Single source of truth - was previously hardcoded separately in the
 // Sidebar, AboutPanel, and (still is, necessarily - separate runtime/bundle)
 // the backend's own APP_VERSION constant in index.ts.
-export const APP_VERSION = '0.3.0';
+export const APP_VERSION = '0.4.0';
 
 const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/MP3DPT/fluidnc-webcontrol/releases/latest';
 

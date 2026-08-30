@@ -152,6 +152,8 @@ npm run dev:frontend   # frontend on :5173, proxies /ws and /api to :8000
 - [x] Backend/plugin error log viewer, with a diagnostics export for bug reports (redacts credentials automatically)
 - [x] Settings + plugin config backup/restore - export before reinstalling on a new device, or just to have a copy
 - [x] Jog step sizes are user-configurable (Settings), not a fixed list
+- [x] Toolpath grid auto-fits the loaded job, with a numbered ruler anchored at machine (0,0)
+- [x] Configurable working area (spoilboard) size, with a warning when a loaded job doesn't fit
 - [ ] Native spindle/laser control (M3/M4/M5 + speed) - no G-code spindle control yet; Smart Plug Control covers on/off via a smart plug in the meantime
 - [ ] Feed/spindle override sliders during a running job
 - [ ] Alarm recovery UX (currently just a status badge, no guided recovery)
