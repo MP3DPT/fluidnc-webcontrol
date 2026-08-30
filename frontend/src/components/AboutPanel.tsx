@@ -4,10 +4,11 @@ import { APP_VERSION, type LatestAppVersion } from '../version';
 interface Props {
   /** null when up to date, offline, or the check hasn't resolved yet - see useLatestAppVersion(). */
   latestVersion: LatestAppVersion | null;
+  onOpenUpdate: () => void;
 }
 
 /** Static "what is this app" blurb - its own sidebar destination, not folded into Settings. */
-export function AboutPanel({ latestVersion }: Props) {
+export function AboutPanel({ latestVersion, onOpenUpdate }: Props) {
   return (
     <div className="drawer-panel">
       <h3>fluidnc-webcontrol v{APP_VERSION}</h3>
@@ -31,15 +32,16 @@ export function AboutPanel({ latestVersion }: Props) {
           <div>
             <strong>Update available: v{latestVersion.version}</strong>
             <p className="hint">
-              This app doesn't update itself - deliberately, same reason install.sh/install-image.sh are things you
-              run yourself, not something done on your behalf, since applying it touches systemd. SSH into the Pi
-              and run the same install command from{' '}
+              Review what's new and update in place, right from here - a short service restart at the end, no SSH
+              needed. (See{' '}
               <a href={latestVersion.url} target="_blank" rel="noopener noreferrer">
                 the release notes
               </a>{' '}
-              again - see the README's "Running it on a Raspberry Pi" section for the exact command for your install
-              type.
+              on GitHub if you'd rather read them there first.)
             </p>
+            <button className="primary" onClick={onOpenUpdate}>
+              Update to v{latestVersion.version}
+            </button>
           </div>
         </div>
       )}

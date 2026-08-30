@@ -14,6 +14,7 @@ import { PluginPanels } from './components/PluginPanels';
 import { PluginsManagerPanel } from './components/PluginsManagerPanel';
 import { AppSettingsPanel } from './components/AppSettingsPanel';
 import { AboutPanel } from './components/AboutPanel';
+import { UpdateModal } from './components/UpdateModal';
 import { ProgramPanel } from './components/ProgramPanel';
 import { LogsPanel } from './components/LogsPanel';
 import { APP_VERSION, useLatestAppVersion } from './version';
@@ -50,10 +51,12 @@ export default function App() {
     machineRates,
     plugins,
     backendLog,
+    updateStatus,
     send,
     invokePluginAction,
   } = useSocket();
   const controlsDisabled = !connectionOpen;
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const programRunning = programStatus.state === 'running';
   const latestAppVersion = useLatestAppVersion();
 
@@ -213,8 +216,19 @@ export default function App() {
       </Drawer>
 
       <Drawer open={activePanel === 'about'} title="About" onClose={() => setActivePanel(null)}>
-        <AboutPanel latestVersion={latestAppVersion} />
+        <AboutPanel latestVersion={latestAppVersion} onOpenUpdate={() => setUpdateModalOpen(true)} />
       </Drawer>
+
+      {updateModalOpen && latestAppVersion && (
+        <UpdateModal
+          latestVersion={latestAppVersion}
+          plugins={plugins}
+          settings={settings}
+          updateStatus={updateStatus}
+          jobActive={programStatus.state === 'running' || programStatus.state === 'paused'}
+          onClose={() => setUpdateModalOpen(false)}
+        />
+      )}
 
       <div
         className={`app ${isDragging ? 'drag-active' : ''}`}
@@ -379,7 +393,7 @@ export default function App() {
                         elapsedSeconds={elapsedSeconds}
                         currentPass={currentPass}
                         hasMachineRates={machineRates !== null}
-                        disabled={controlsDisabled}
+                        disabled={controlsDisabled || updateStatus.status === 'running'}
                         onFileSelected={loadFile}
                         onClear={clearFile}
                         send={send}

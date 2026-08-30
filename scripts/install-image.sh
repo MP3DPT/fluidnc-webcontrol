@@ -28,7 +28,9 @@ set -euo pipefail
 #      persistent data (settings, G-code library, installed plugins) at
 #      /var/lib/fluidnc-webcontrol via FLUIDNC_DATA_DIR
 #   5. Adds a scoped, passwordless sudoers entry for ONLY `/sbin/shutdown`
-#      (powers the header's Reboot/Shutdown buttons)
+#      (powers the header's Reboot/Shutdown buttons) and
+#      `systemctl restart fluidnc-webcontrol` (powers the in-app "Update
+#      now" button's own restart at the end - see backend/src/update)
 #   6. Installs + enables a systemd service so it starts automatically on
 #      boot and restarts if it crashes
 #
@@ -83,9 +85,9 @@ echo "==> Preparing data directory $DATA_DIR"
 mkdir -p "$DATA_DIR"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR" "$DATA_DIR"
 
-echo "==> Adding scoped sudoers entry for shutdown/reboot"
+echo "==> Adding scoped sudoers entry for shutdown/reboot/update-restart"
 SUDOERS_FILE=/etc/sudoers.d/fluidnc-webcontrol
-echo "$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown" > "$SUDOERS_FILE"
+echo "$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /bin/systemctl restart fluidnc-webcontrol" > "$SUDOERS_FILE"
 chmod 440 "$SUDOERS_FILE"
 if ! visudo -c -f "$SUDOERS_FILE" >/dev/null; then
   echo "!! sudoers syntax check failed, removing $SUDOERS_FILE"

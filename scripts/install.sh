@@ -16,8 +16,10 @@ set -euo pipefail
 #   2. Adds your user to the `dialout` group (serial port access)
 #   3. Installs dependencies and builds the frontend + backend
 #   4. Adds a scoped, passwordless sudoers entry for ONLY `/sbin/shutdown`
-#      (powers the header's Reboot/Shutdown buttons - remove
-#      /etc/sudoers.d/fluidnc-webcontrol later if you don't want this)
+#      (powers the header's Reboot/Shutdown buttons) and
+#      `systemctl restart fluidnc-webcontrol` (powers the in-app "Update
+#      now" button's own restart at the end - see backend/src/update) -
+#      remove /etc/sudoers.d/fluidnc-webcontrol later if you don't want this
 #   5. Installs + enables a systemd service so it starts automatically on
 #      boot and restarts if it crashes
 
@@ -52,9 +54,9 @@ echo "==> Installing dependencies and building"
 # path, which is exactly the failure this PATH override avoids.
 sudo -u "$REAL_USER" env PATH="$NODE_DIR:$PATH" bash -c "cd '$REPO_DIR' && npm install && npm run build:frontend && npm run build:backend"
 
-echo "==> Adding scoped sudoers entry for shutdown/reboot"
+echo "==> Adding scoped sudoers entry for shutdown/reboot/update-restart"
 SUDOERS_FILE=/etc/sudoers.d/fluidnc-webcontrol
-echo "$REAL_USER ALL=(ALL) NOPASSWD: /sbin/shutdown" > "$SUDOERS_FILE"
+echo "$REAL_USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /bin/systemctl restart fluidnc-webcontrol" > "$SUDOERS_FILE"
 chmod 440 "$SUDOERS_FILE"
 if ! visudo -c -f "$SUDOERS_FILE" >/dev/null; then
   echo "!! sudoers syntax check failed, removing $SUDOERS_FILE"

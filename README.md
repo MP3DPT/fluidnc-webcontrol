@@ -102,7 +102,7 @@ cd fluidnc-webcontrol
 sudo ./scripts/install.sh
 ```
 
-This is the whole setup: Node.js via nvm, the `dialout` group for serial access, dependencies + build, a scoped sudoers entry for the header's Reboot/Shutdown buttons (see [`scripts/install.sh`](scripts/install.sh) for exactly what it does - it only ever grants `/sbin/shutdown`, nothing else), and a systemd service so it starts automatically on boot and restarts on crash. Run it yourself with `sudo` - deliberately not something automated on your behalf, since it touches sudoers and systemd.
+This is the whole setup: Node.js via nvm, the `dialout` group for serial access, dependencies + build, a scoped sudoers entry for the header's Reboot/Shutdown buttons and the in-app "Update now" button's own restart (see [`scripts/install.sh`](scripts/install.sh) for exactly what it does - it only ever grants `/sbin/shutdown` and `systemctl restart fluidnc-webcontrol`, nothing else), and a systemd service so it starts automatically on boot and restarts on crash. Run it yourself with `sudo` - deliberately not something automated on your behalf, since it touches sudoers and systemd.
 
 Then connect the PiBot via USB and open `http://<pi-ip-address>:8000` from any browser on the network.
 
@@ -124,11 +124,12 @@ If you'd rather not run the installer (or want it as a one-off foreground proces
    npm start
    ```
    This builds the frontend, builds the backend, and starts the server on port 8000 (won't survive a reboot or restart itself on crash - that's what the systemd service from the installer gives you).
-4. **(Optional) Allow the header's Reboot/Shutdown buttons** by adding a scoped sudoers entry yourself:
+4. **(Optional) Allow the header's Reboot/Shutdown buttons and in-app updates** by adding a scoped sudoers entry yourself:
    ```bash
-   echo "$USER ALL=(ALL) NOPASSWD: /sbin/shutdown" | sudo tee /etc/sudoers.d/fluidnc-webcontrol
+   echo "$USER ALL=(ALL) NOPASSWD: /sbin/shutdown, /bin/systemctl restart fluidnc-webcontrol" | sudo tee /etc/sudoers.d/fluidnc-webcontrol
    sudo chmod 440 /etc/sudoers.d/fluidnc-webcontrol
    ```
+   Already installed and only have the old `/sbin/shutdown`-only version of this file from before in-app updates existed? Re-run the same two lines above (or `sudo visudo -f /etc/sudoers.d/fluidnc-webcontrol` and add `, /bin/systemctl restart fluidnc-webcontrol` to the end of the existing line) - the "Update now" button in About will otherwise download and build the new version successfully but fail at the very last step trying to restart the service.
 
 For active development (auto-reload), run the backend and frontend dev servers in two terminals instead:
 ```bash
@@ -148,7 +149,7 @@ npm run dev:frontend   # frontend on :5173, proxies /ws and /api to :8000
 - [x] Addon/plugin API (backend hooks + frontend panel registration) - see [Plugins](#plugins)
 - [x] Browsable plugin index with one-click install straight from a GitHub repo
 - [x] One-click plugin updates when a newer version is available in the index
-- [x] In-app update notifications (app + plugins) - informational only, applying an app update is still a deliberate SSH step, same reasoning as the install scripts themselves
+- [x] In-app updates, app and plugins together, no SSH needed - see what's new, confirm, and it downloads/builds/restarts itself (a short service restart, not a full reboot); optionally bundles any outdated plugins into the same restart
 - [x] Backend/plugin error log viewer, with a diagnostics export for bug reports (redacts credentials automatically)
 - [x] Settings + plugin config backup/restore - export before reinstalling on a new device, or just to have a copy
 - [x] Jog step sizes are user-configurable (Settings), not a fixed list

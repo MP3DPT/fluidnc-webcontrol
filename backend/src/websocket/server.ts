@@ -6,9 +6,10 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { FluidNCConnection } from '../serial/connection.js';
 import { ProgramRunner } from '../program/runner.js';
 import { SettingsStore, type Settings } from '../settings/store.js';
-import { rebootSystem, shutdownSystem } from '../system/power.js';
+import { rebootSystem, restartService, shutdownSystem } from '../system/power.js';
 import { PluginLoader } from '../plugins/loader.js';
 import type { LogStore } from '../logging/logStore.js';
+import { applyUpdate } from '../update/updater.js';
 
 // backend/src/websocket/server.ts -> backend/plugins-bundled
 const BUNDLED_PLUGINS_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../plugins-bundled');
@@ -58,6 +59,61 @@ export async function attachWebSocketServer(
   const settingsStore = new SettingsStore();
   let startingJob = false;
 
+  // Tracked here (not just in the frontend) so it survives a reconnect or a
+  // page reload mid-update - see App.tsx's auto-reload logic, which relies
+  // on asking the backend "did the update actually finish", not just "did
+  // the WebSocket come back", to tell a real completion apart from an
+  // unrelated network blip during the build.
+  type UpdateStatus =
+    | { status: 'idle' }
+    | { status: 'running'; step: string }
+    | { status: 'complete' }
+    | { status: 'failed'; error: string };
+  let updateStatus: UpdateStatus = { status: 'idle' };
+  const setUpdateStatus = (next: UpdateStatus) => {
+    updateStatus = next;
+    broadcast(wss, { type: 'updateStatus', data: updateStatus });
+  };
+
+  /** Downloads happen client-side (the frontend fetches the release zip from
+   * GitHub, same as it already does for a plugin's zip) and POST the bytes
+   * here - see index.ts's /api/system/update route. Refuses to start while
+   * a job is running/paused (symmetric to applyLoadedFile's own refusal to
+   * load a new file mid-run) since the update ends in a service restart
+   * that would otherwise yank the connection out from under a streaming
+   * job with no controlled stop. Never throws - every outcome, including a
+   * refusal to even start, goes out as an updateStatus broadcast, since the
+   * HTTP request that kicks this off responds immediately and doesn't wait
+   * around for the result (see index.ts). */
+  async function startAppUpdate(zipBuffer: Buffer): Promise<void> {
+    if (updateStatus.status === 'running') {
+      setUpdateStatus({ status: 'failed', error: 'An update is already in progress' });
+      return;
+    }
+    const jobState = runner.getState().state;
+    if (jobState === 'running' || jobState === 'paused') {
+      setUpdateStatus({ status: 'failed', error: 'A program is currently running - stop it before updating' });
+      return;
+    }
+
+    setUpdateStatus({ status: 'running', step: 'Starting…' });
+    try {
+      await applyUpdate(zipBuffer, (step) => setUpdateStatus({ status: 'running', step }));
+      setUpdateStatus({ status: 'complete' });
+      // Give the 'complete' broadcast above a moment to actually reach
+      // clients before the restart below tears this process down - without
+      // this, connected browsers could see the WebSocket just drop with no
+      // final status, indistinguishable from a failure.
+      setTimeout(() => {
+        restartService().catch((err) => {
+          console.error('Failed to restart after update:', err);
+        });
+      }, 500);
+    } catch (err) {
+      setUpdateStatus({ status: 'failed', error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   const broadcastFn = (type: string, data: unknown) => broadcast(wss, { type, data });
   const pluginLoader = new PluginLoader(connection, runner, settingsStore, broadcastFn, httpApp);
   pluginLoader.ensureBundled(BUNDLED_PLUGINS_DIR);
@@ -93,6 +149,7 @@ export async function attachWebSocketServer(
     ws.send(JSON.stringify({ type: 'settings', data: settingsStore.get() }));
     ws.send(JSON.stringify({ type: 'plugins', data: pluginLoader.list() }));
     ws.send(JSON.stringify({ type: 'backendLogs', data: logStore.list() }));
+    ws.send(JSON.stringify({ type: 'updateStatus', data: updateStatus }));
 
     ws.on('message', async (raw) => {
       let msg: ClientMessage;
@@ -192,6 +249,10 @@ export async function attachWebSocketServer(
             break;
           case 'runProgram': {
             if (startingJob) break;
+            if (updateStatus.status === 'running') {
+              ws.send(JSON.stringify({ type: 'programError', data: 'An update is in progress - try again once it finishes.' }));
+              break;
+            }
             startingJob = true;
             pluginLoader
               .runBeforeRunHooks()
@@ -238,5 +299,10 @@ export async function attachWebSocketServer(
     });
   });
 
-  return { wss, pluginLoader, broadcastPlugins: () => broadcast(wss, { type: 'plugins', data: pluginLoader.list() }) };
+  return {
+    wss,
+    pluginLoader,
+    broadcastPlugins: () => broadcast(wss, { type: 'plugins', data: pluginLoader.list() }),
+    startAppUpdate,
+  };
 }

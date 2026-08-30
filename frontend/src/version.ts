@@ -23,6 +23,10 @@ export function isNewerVersion(remote: string, local: string): boolean {
 export interface LatestAppVersion {
   version: string;
   url: string;
+  /** The release's own notes (GitHub renders this from Markdown; shown here
+   * as plain-ish text - see UpdateModal). Empty string if the release has
+   * no body at all, never undefined - simpler for callers than optional. */
+  notes: string;
 }
 
 /**
@@ -39,9 +43,13 @@ export function useLatestAppVersion(): LatestAppVersion | null {
     let cancelled = false;
     fetch(GITHUB_LATEST_RELEASE_URL)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { tag_name?: string; html_url?: string } | null) => {
+      .then((data: { tag_name?: string; html_url?: string; body?: string } | null) => {
         if (cancelled || !data?.tag_name || !isNewerVersion(data.tag_name, APP_VERSION)) return;
-        setLatest({ version: data.tag_name.replace(/^v/, ''), url: data.html_url ?? 'https://github.com/MP3DPT/fluidnc-webcontrol/releases' });
+        setLatest({
+          version: data.tag_name.replace(/^v/, ''),
+          url: data.html_url ?? 'https://github.com/MP3DPT/fluidnc-webcontrol/releases',
+          notes: data.body ?? '',
+        });
       })
       .catch(() => {});
     return () => {

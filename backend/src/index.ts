@@ -49,7 +49,7 @@ async function main() {
     console.log(`fluidnc-webcontrol listening on http://0.0.0.0:${PORT}`);
   });
 
-  const { pluginLoader, broadcastPlugins } = await attachWebSocketServer(server, connection, app, logStore);
+  const { pluginLoader, broadcastPlugins, startAppUpdate } = await attachWebSocketServer(server, connection, app, logStore);
 
   // Raw zip upload - deliberately not JSON, and capped well above any
   // reasonable plugin's size so a malformed upload fails fast instead of
@@ -62,6 +62,19 @@ async function main() {
     } catch (err) {
       res.status(400).json({ ok: false, error: err instanceof Error ? err.message : String(err) });
     }
+  });
+
+  // Raw zip upload, same shape as /api/plugins/install just above - the
+  // frontend downloads the release's source zip straight from GitHub
+  // client-side and POSTs the bytes here. Responds immediately (the actual
+  // work - install/build/restart - runs in the background and reports
+  // progress over the WebSocket as 'updateStatus' broadcasts, not through
+  // this request) since the whole thing can take minutes and this process
+  // gets killed by its own restart at the end anyway, so there'd be no
+  // response to send by the time it's actually done.
+  app.post('/api/system/update', express.raw({ type: '*/*', limit: '20mb' }), (req, res) => {
+    res.json({ ok: true });
+    void startAppUpdate(req.body as Buffer);
   });
 
   app.post('/api/plugins/:id/uninstall', async (req, res) => {

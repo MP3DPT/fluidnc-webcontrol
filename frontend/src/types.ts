@@ -75,6 +75,16 @@ export interface ProgramStatus {
   total: number;
 }
 
+/** Mirrors the backend's own UpdateStatus union exactly (see
+ * websocket/server.ts) - tracked server-side, not just in this tab, so a
+ * reload or reconnect mid-update always shows the real current state
+ * instead of losing it. */
+export type UpdateStatus =
+  | { status: 'idle' }
+  | { status: 'running'; step: string }
+  | { status: 'complete' }
+  | { status: 'failed'; error: string };
+
 export interface GeneralSettings {
   consoleAutoFeedEnabled: boolean;
   consoleDefaultFeed: number;

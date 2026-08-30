@@ -79,7 +79,7 @@ in with the documented credentials.
 the Pi itself - it is not a dependency of the app. Step 2's dedicated
 `fluidnc-webcontrol` system account is what actually owns the systemd
 service, the `dialout`/`video`/`gpio` group memberships, the scoped
-`shutdown` sudoers entry, and the data directory. A downloader renaming
+`shutdown`/`systemctl restart` sudoers entry, and the data directory. A downloader renaming
 `pi`, changing its password, swapping to key-only auth, or disabling
 password auth entirely does not affect the app in any way - the web UI
 keeps running untouched through any of that, since it never depended on

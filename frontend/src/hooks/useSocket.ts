@@ -1,5 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { BackendLogEntry, LogEntry, PluginInfo, PortInfo, Position, ProbeResult, ProgramStatus, Settings, StatusReport } from '../types';
+import type {
+  BackendLogEntry,
+  LogEntry,
+  PluginInfo,
+  PortInfo,
+  Position,
+  ProbeResult,
+  ProgramStatus,
+  Settings,
+  StatusReport,
+  UpdateStatus,
+} from '../types';
 import type { MachineRates } from '../gcode/estimateTime';
 
 const RECONNECT_DELAY_MS = 2000;
@@ -20,6 +31,15 @@ export function useSocket() {
   const [machineRates, setMachineRates] = useState<MachineRates | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [backendLog, setBackendLog] = useState<BackendLogEntry[]>([]);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ status: 'idle' });
+  // Set only by a live 'complete' broadcast (see the message handler below) -
+  // by construction that only ever happens while already connected, so
+  // seeing it set on a later reconnect's onopen reliably means "this
+  // reconnect is the one after the update's own restart", not an unrelated
+  // network blip. A blind timer would risk reloading too early (or, on a
+  // slow Pi, leaving a stale page up too long); waiting for a real
+  // reconnect means the backend is provably back up and responsive first.
+  const awaitingReloadRef = useRef(false);
   const pendingPluginActions = useRef(new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>());
 
   const appendLog = useCallback((kind: LogEntry['kind'], text: string) => {
@@ -35,7 +55,16 @@ export function useSocket() {
       socket = new WebSocket(`${protocol}://${location.host}/ws`);
       wsRef.current = socket;
 
-      socket.onopen = () => setWsReady(true);
+      socket.onopen = () => {
+        setWsReady(true);
+        if (awaitingReloadRef.current) {
+          // The backend just came back up after the update's own restart -
+          // this tab is still running the *old* JS bundle in memory (a
+          // WebSocket reconnect alone never swaps that out), so a real page
+          // reload is the only way to actually show the new version.
+          window.location.reload();
+        }
+      };
       socket.onclose = () => {
         setWsReady(false);
         if (!cancelled) setTimeout(connectSocket, RECONNECT_DELAY_MS);
@@ -110,6 +139,12 @@ export function useSocket() {
           case 'backendLogs':
             setBackendLog(msg.data as BackendLogEntry[]);
             break;
+          case 'updateStatus': {
+            const data = msg.data as UpdateStatus;
+            setUpdateStatus(data);
+            if (data.status === 'complete') awaitingReloadRef.current = true;
+            break;
+          }
           case 'backendLogLine':
             // Capped client-side too, matching the backend's own ring
             // buffer limit - otherwise a browser tab left open for days
@@ -194,6 +229,7 @@ export function useSocket() {
     machineRates,
     plugins,
     backendLog,
+    updateStatus,
     send,
     invokePluginAction,
   };
