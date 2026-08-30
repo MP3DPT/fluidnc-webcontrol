@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { delimiter, dirname, join } from 'node:path';
 import AdmZip from 'adm-zip';
 
@@ -69,12 +69,10 @@ async function fetchUpdateZip(tag: string): Promise<Buffer> {
 /**
  * Applies an app update: downloads the given release tag's source zip
  * (server-side - see fetchUpdateZip above for why this can't be a client-side
- * fetch like everything else this app downloads from GitHub) into a fresh,
- * fully separate staging directory, installs dependencies and builds both
- * workspaces THERE, and only if every step succeeds, atomically swaps it in
- * for the live install directory via rename() (near-instant on the same
- * filesystem - no prolonged window where the live directory is
- * half-updated).
+ * fetch like everything else this app downloads from GitHub) into a fresh
+ * staging directory, installs dependencies and builds both workspaces
+ * THERE, and only if every step succeeds, swaps it in for the live install
+ * directory's contents.
  *
  * Deliberately NOT an in-place overlay of the live directory: building in
  * total isolation first means a failed build (bad network mid-download,
@@ -84,36 +82,42 @@ async function fetchUpdateZip(tag: string): Promise<Buffer> {
  * than overlaying onto existing node_modules - no leftover-dependency risk
  * to reason about.
  *
+ * Staging/extract/previous all live *inside* installDir (installDir/.update/...),
+ * not as siblings of it - confirmed the hard way (EACCES trying to mkdir a
+ * sibling directory) that the service account which owns installDir (via a
+ * one-time chown -R at install time) does NOT have write permission on
+ * installDir's own *parent* (/opt, typically root-owned) - only within
+ * installDir's own tree. Staying nested needs no permission beyond what the
+ * account already has. The tradeoff: swapping in the new version is a loop
+ * of per-entry renames (move every one of installDir's current top-level
+ * entries into .update/previous, then move every one of staging's built
+ * entries into installDir), not a single directory rename - still every
+ * individual move is an instant same-filesystem rename, and the whole loop
+ * only starts after the build has already fully succeeded, so the risk
+ * window is small and well past the actual work. End result is identical
+ * either way: installDir ends up with exactly staging's content, nothing
+ * old left mixed in, since every one of installDir's own entries is moved
+ * out before anything new is moved in.
+ *
  * Settings, the G-code library, and installed plugins all live under
  * DATA_DIR (see dataDir.ts), which is a separate path from the install
  * directory on both install methods (/var/lib/... vs /opt/..., or
  * ~/.fluidnc-webcontrol vs the repo dir) - untouched by this regardless.
  *
- * Known tradeoff: this is a plain "replace with the new release's files"
- * swap, not an rsync --delete - a file *removed* between versions can be
- * left behind as an orphan in the new install dir. Accepted rather than
- * depending on rsync being installed on every user's Pi; revisit if it ever
- * actually matters (this project doesn't restructure files often).
- * Separately: on a manually-installed (install.sh, git-cloned) Pi, this
- * replaces the working tree with a plain source copy, i.e. it stops being a
- * git checkout - documented in the README, not worth solving for the sake
- * of a `.git` folder nobody's using at runtime anyway.
+ * On a manually-installed (install.sh, git-cloned) Pi, this replaces the
+ * working tree with a plain source copy, i.e. it stops being a git
+ * checkout - documented in the README, not worth solving for the sake of a
+ * `.git` folder nobody's using at runtime anyway.
  */
 export async function applyUpdate(tag: string, onProgress: (step: string) => void): Promise<void> {
   const installDir = process.cwd();
-  const stagingDir = `${installDir}.staging`;
-  const previousDir = `${installDir}.previous`;
-  // A sibling of installDir, deliberately NOT os.tmpdir() - every rename()
-  // below needs to stay on the same filesystem as installDir, and tmpdir()
-  // is very likely a separate mount (tmpfs, on most Linux setups including
-  // Raspberry Pi OS); renameSync() across filesystems fails with EXDEV.
-  // Extracting the zip's own top-level wrapper folder here first, then
-  // renaming just that inner folder onto stagingDir, keeps every move a
-  // same-filesystem rename instead of needing a real copy anywhere.
-  const extractDir = `${installDir}.extract`;
+  const updateRoot = join(installDir, '.update');
+  const extractDir = join(updateRoot, 'extract');
+  const stagingDir = join(updateRoot, 'staging');
+  const previousDir = join(updateRoot, 'previous');
 
-  rmSync(stagingDir, { recursive: true, force: true }); // leftover from a prior failed attempt, if any
-  rmSync(extractDir, { recursive: true, force: true });
+  rmSync(updateRoot, { recursive: true, force: true }); // leftover from a prior attempt, if any
+  mkdirSync(updateRoot, { recursive: true });
 
   onProgress('Downloading update…');
   const zipBuffer = await fetchUpdateZip(tag);
@@ -144,15 +148,22 @@ export async function applyUpdate(tag: string, onProgress: (step: string) => voi
     await npm(['run', 'build:backend'], stagingDir, onProgress);
 
     onProgress('Switching to the new version…');
-    rmSync(previousDir, { recursive: true, force: true }); // leftover from an even-older attempt, if any
-    renameSync(installDir, previousDir);
-    renameSync(stagingDir, installDir);
-    // Kept as .previous (not deleted) as a manual rollback option over SSH -
-    // `mv` it back over the install dir - if the new version somehow fails
-    // to even start. Cleaned up automatically by the *next* successful
-    // update instead of here, so it's always available until superseded.
+    mkdirSync(previousDir, { recursive: true });
+    for (const name of readdirSync(installDir)) {
+      if (name === '.update') continue; // our own working directory - never move this into itself
+      renameSync(join(installDir, name), join(previousDir, name));
+    }
+    for (const name of readdirSync(stagingDir)) {
+      renameSync(join(stagingDir, name), join(installDir, name));
+    }
+    // previousDir (installDir/.update/previous) is kept, not deleted, as a
+    // manual rollback option over SSH if the new version somehow fails to
+    // even start - move its contents back up over installDir's own.
+    // Cleaned up automatically by the *next* successful update's own
+    // rmSync(updateRoot, ...) at the top of this function, not here, so
+    // it's always available until superseded.
   } finally {
     rmSync(extractDir, { recursive: true, force: true });
-    rmSync(stagingDir, { recursive: true, force: true }); // only still exists if we bailed out before the swap
+    rmSync(stagingDir, { recursive: true, force: true }); // empty after a successful swap; only non-empty if we bailed out before it
   }
 }
