@@ -1,4 +1,4 @@
-# fluidnc-webcontrol v0.4.0 — Raspberry Pi SD card image
+# fluidnc-webcontrol v0.4.1 — Raspberry Pi SD card image
 
 A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and running as a system service — no manual install needed. Plug in your PiBot (or any FluidNC controller) over USB, flash this image, and you're up in a few minutes.
 
@@ -20,6 +20,8 @@ Need WiFi instead of wired ethernet? SSH in over the wired connection first (or 
 - **Bold, numbered X/Y axis rulers** — solid colored lines through the origin with legible tick labels at a regular interval, so it's obvious at a glance exactly where a point sits relative to (0,0), not just "somewhere on the grid".
 - **Configurable working area** (Settings → Working Area) — set your spoilboard's actual size in mm and the grid switches to that fixed size instead of auto-fitting; loading a job that doesn't fit shows an on-screen warning naming which side(s) it exceeds. Optional — leave at 0 to keep the auto-fit behavior.
 - **Prominent job progress overlay** on the Toolpath view — a big, easy-to-spot percentage and time-remaining readout while a job is running or paused, instead of only the small text next to the Run/Pause/Stop buttons.
+- **In-app updates, no SSH needed** — the About page now has an actual "Update now" button: shows the release notes, optionally bundles in any outdated plugins, optionally backs up all your settings first (you pick where to save it), then downloads/builds/restarts itself in place. A short service restart at the end, not a full reboot. Blocked in both directions from ever colliding with a running job - can't start an update while a job's running, can't start a job while an update's in progress.
+- v0.4.1 itself is a small follow-up to v0.4.0 specifically to validate that update mechanism end-to-end on real hardware before recommending anyone rely on it.
 
 ## What's included
 
@@ -29,8 +31,9 @@ Need WiFi instead of wired ethernet? SSH in over the wired connection first (or 
 
 ## Verified before release
 
-- All of the above verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
-- **Not yet re-verified against real PiBot hardware or re-captured as an image** - this section gets filled in with the real hardware/image checklist (same as every prior release) once this build is actually deployed and tested on the Pi
+- Toolpath grid/ruler/working-area features verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
+- v0.4.0 deployed to a real PiBot V4.96 PRO setup and confirmed working: boots correctly, toolpath preview renders correctly against real machine coordinates
+- **The in-app updater itself has not yet been exercised on real hardware** - this v0.4.1 release exists specifically so that can happen (updating a real Pi from v0.4.0 to this release, through the button, not manually) before it's something anyone should rely on for a production update. Not yet re-captured as an SD card image for this release - the existing v0.3.0 image download link stays as-is until a full new image is captured and verified.
 
 ## Requirements
 
