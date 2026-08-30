@@ -85,17 +85,20 @@ export function UpdateModal({ latestVersion, plugins, settings, updateStatus, jo
         if (!selected.has(plugin.id)) continue;
         await installPluginZip(plugin.download);
       }
-      const zipUrl = `https://github.com/MP3DPT/fluidnc-webcontrol/archive/refs/tags/v${latestVersion.version}.zip`;
-      const zipRes = await fetch(zipUrl);
-      if (!zipRes.ok) throw new Error(`Release download failed (${zipRes.status})`);
-      const zipBody = await zipRes.arrayBuffer();
-      await fetch('/api/system/update', {
+      // The app's own release zip is downloaded by the backend, not here -
+      // unlike a plugin's zip (raw.githubusercontent.com, fetched above),
+      // GitHub's archive-zip endpoint doesn't send CORS headers, so a
+      // browser-side fetch of it fails outright with a generic "Failed to
+      // fetch". Just hand over which tag to update to.
+      const updateRes = await fetch('/api/system/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/zip' },
-        body: zipBody,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag: `v${latestVersion.version}` }),
       });
+      const updateData = await updateRes.json();
+      if (!updateRes.ok || !updateData.ok) throw new Error(updateData.error ?? 'Failed to start the update');
       // From here on, all real progress is the backend's own updateStatus
-      // broadcasts (see props) - this function's job ends once the upload
+      // broadcasts (see props) - this function's job ends once the request
       // lands; `starting` stays true until that status actually shows up.
     } catch (err) {
       // The save-picker throws its own AbortError when the user cancels the

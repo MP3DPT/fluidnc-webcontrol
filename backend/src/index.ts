@@ -13,7 +13,7 @@ const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
 // Matches the frontend's own hardcoded version string (Sidebar/AboutPanel) -
 // this project doesn't read package.json for it anywhere, so staying
 // consistent with that rather than introducing a second source.
-const APP_VERSION = '0.4.1';
+const APP_VERSION = '0.4.2';
 
 async function main() {
   // Attached before anything else can log, so even an early startup error
@@ -64,17 +64,23 @@ async function main() {
     }
   });
 
-  // Raw zip upload, same shape as /api/plugins/install just above - the
-  // frontend downloads the release's source zip straight from GitHub
-  // client-side and POSTs the bytes here. Responds immediately (the actual
-  // work - install/build/restart - runs in the background and reports
+  // Just the target tag - the actual zip download happens here on the
+  // backend (see update/updater.ts's fetchUpdateZip for why: GitHub's
+  // archive-zip endpoint doesn't send CORS headers, so a browser-side fetch
+  // of it fails outright). Responds immediately (the real work -
+  // download/install/build/restart - runs in the background and reports
   // progress over the WebSocket as 'updateStatus' broadcasts, not through
   // this request) since the whole thing can take minutes and this process
   // gets killed by its own restart at the end anyway, so there'd be no
   // response to send by the time it's actually done.
-  app.post('/api/system/update', express.raw({ type: '*/*', limit: '20mb' }), (req, res) => {
+  app.post('/api/system/update', express.json(), (req, res) => {
+    const { tag } = req.body as { tag?: string };
+    if (!tag || !/^v\d+\.\d+\.\d+$/.test(tag)) {
+      res.status(400).json({ ok: false, error: 'A valid "tag" (e.g. "v0.4.1") is required' });
+      return;
+    }
     res.json({ ok: true });
-    void startAppUpdate(req.body as Buffer);
+    void startAppUpdate(tag);
   });
 
   app.post('/api/plugins/:id/uninstall', async (req, res) => {

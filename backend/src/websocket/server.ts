@@ -75,17 +75,19 @@ export async function attachWebSocketServer(
     broadcast(wss, { type: 'updateStatus', data: updateStatus });
   };
 
-  /** Downloads happen client-side (the frontend fetches the release zip from
-   * GitHub, same as it already does for a plugin's zip) and POST the bytes
-   * here - see index.ts's /api/system/update route. Refuses to start while
-   * a job is running/paused (symmetric to applyLoadedFile's own refusal to
-   * load a new file mid-run) since the update ends in a service restart
-   * that would otherwise yank the connection out from under a streaming
-   * job with no controlled stop. Never throws - every outcome, including a
-   * refusal to even start, goes out as an updateStatus broadcast, since the
-   * HTTP request that kicks this off responds immediately and doesn't wait
+  /** The frontend just POSTs which tag to update to (see index.ts's
+   * /api/system/update route) - the download itself happens here, not
+   * client-side, since GitHub's archive-zip endpoint doesn't send CORS
+   * headers for cross-origin browser fetches (see updater.ts's
+   * fetchUpdateZip for the full story). Refuses to start while a job is
+   * running/paused (symmetric to applyLoadedFile's own refusal to load a
+   * new file mid-run) since the update ends in a service restart that would
+   * otherwise yank the connection out from under a streaming job with no
+   * controlled stop. Never throws - every outcome, including a refusal to
+   * even start, goes out as an updateStatus broadcast, since the HTTP
+   * request that kicks this off responds immediately and doesn't wait
    * around for the result (see index.ts). */
-  async function startAppUpdate(zipBuffer: Buffer): Promise<void> {
+  async function startAppUpdate(tag: string): Promise<void> {
     if (updateStatus.status === 'running') {
       setUpdateStatus({ status: 'failed', error: 'An update is already in progress' });
       return;
@@ -98,7 +100,7 @@ export async function attachWebSocketServer(
 
     setUpdateStatus({ status: 'running', step: 'Starting…' });
     try {
-      await applyUpdate(zipBuffer, (step) => setUpdateStatus({ status: 'running', step }));
+      await applyUpdate(tag, (step) => setUpdateStatus({ status: 'running', step }));
       setUpdateStatus({ status: 'complete' });
       // Give the 'complete' broadcast above a moment to actually reach
       // clients before the restart below tears this process down - without

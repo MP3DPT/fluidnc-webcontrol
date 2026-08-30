@@ -47,14 +47,34 @@ function runCommand(command: string, args: string[], cwd: string, onLine: (line:
 const npm = (args: string[], cwd: string, onLine: (line: string) => void) => runCommand(NPM_BINARY_RESOLVED, args, cwd, onLine);
 
 /**
- * Applies an app update: extracts a downloaded GitHub source zip (the
- * frontend fetches it client-side, same as a plugin's zip already is - see
- * PluginsManagerPanel's installFromIndex - and POSTs the bytes here, same
- * /api/plugins/install pattern) into a fresh, fully separate staging
- * directory, installs dependencies and builds both workspaces THERE, and
- * only if every step succeeds, atomically swaps it in for the live install
- * directory via rename() (near-instant on the same filesystem - no
- * prolonged window where the live directory is half-updated).
+ * Downloads a release's source zip straight from GitHub. Deliberately
+ * server-side, unlike every other "download from GitHub" in this app
+ * (plugin zips, the update-available check) - those all fetch from
+ * raw.githubusercontent.com or api.github.com, which send permissive CORS
+ * headers for exactly this kind of cross-origin browser use. GitHub's own
+ * archive-download endpoint (github.com/.../archive/refs/tags/*.zip, i.e.
+ * codeload.github.com under the hood) does not - a browser fetch() of it
+ * fails outright with a generic "Failed to fetch" TypeError, no matter what
+ * this app does client-side. A server-to-server request isn't subject to
+ * CORS at all, so this is the one part of the whole flow that has to run
+ * here instead of in UpdateModal.
+ */
+async function fetchUpdateZip(tag: string): Promise<Buffer> {
+  const url = `https://github.com/MP3DPT/fluidnc-webcontrol/archive/refs/tags/${tag}.zip`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Release download failed (${res.status})`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+/**
+ * Applies an app update: downloads the given release tag's source zip
+ * (server-side - see fetchUpdateZip above for why this can't be a client-side
+ * fetch like everything else this app downloads from GitHub) into a fresh,
+ * fully separate staging directory, installs dependencies and builds both
+ * workspaces THERE, and only if every step succeeds, atomically swaps it in
+ * for the live install directory via rename() (near-instant on the same
+ * filesystem - no prolonged window where the live directory is
+ * half-updated).
  *
  * Deliberately NOT an in-place overlay of the live directory: building in
  * total isolation first means a failed build (bad network mid-download,
@@ -79,7 +99,7 @@ const npm = (args: string[], cwd: string, onLine: (line: string) => void) => run
  * git checkout - documented in the README, not worth solving for the sake
  * of a `.git` folder nobody's using at runtime anyway.
  */
-export async function applyUpdate(zipBuffer: Buffer, onProgress: (step: string) => void): Promise<void> {
+export async function applyUpdate(tag: string, onProgress: (step: string) => void): Promise<void> {
   const installDir = process.cwd();
   const stagingDir = `${installDir}.staging`;
   const previousDir = `${installDir}.previous`;
@@ -94,6 +114,9 @@ export async function applyUpdate(zipBuffer: Buffer, onProgress: (step: string) 
 
   rmSync(stagingDir, { recursive: true, force: true }); // leftover from a prior failed attempt, if any
   rmSync(extractDir, { recursive: true, force: true });
+
+  onProgress('Downloading update…');
+  const zipBuffer = await fetchUpdateZip(tag);
 
   onProgress('Extracting update…');
   try {
