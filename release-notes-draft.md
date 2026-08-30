@@ -1,17 +1,6 @@
-# fluidnc-webcontrol v0.4.1 — Raspberry Pi SD card image
+# fluidnc-webcontrol v0.4.1
 
-A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and running as a system service — no manual install needed. Plug in your PiBot (or any FluidNC controller) over USB, flash this image, and you're up in a few minutes.
-
-## Flashing instructions
-
-1. Download `fluidnc-webcontrol.img.xz` below.
-2. Open [Raspberry Pi Imager](https://www.raspberrypi.com/software/), choose **"Use custom"**, and select the downloaded file directly (it decompresses automatically — no need to extract it yourself, and no OS customization step needed).
-3. Flash, then boot the Pi with the controller connected over USB (or over WiFi — see below).
-4. Open `http://<pi-ip-address>:8000` from any browser on the network.
-
-**Default login: `pi` / `raspberry`.** SSH in and run `passwd` to change it right after your first boot — same as you'd do for any device that ships with a known default. This is a deliberate, documented tradeoff (same one OctoPrint's own OctoPi image makes) rather than depending on Raspberry Pi Imager's OS customization, which has known reliability issues on current Raspberry Pi OS releases.
-
-Need WiFi instead of wired ethernet? SSH in over the wired connection first (or attach a monitor/keyboard) and run `sudo raspi-config` → System Options → Wireless LAN.
+**No new SD card image with this release** — this is a source-only release. If you're flashing a new SD card from scratch, keep using the [v0.3.0 image](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.3.0) for now (a fresh image covering everything through this release is planned separately). If you already have fluidnc-webcontrol running, use the in-app **Update now** button on the About page (new in this release) or the manual update steps in the README's "Running it on a Raspberry Pi" section.
 
 ## What's new since v0.3.0
 
@@ -33,11 +22,11 @@ Need WiFi instead of wired ethernet? SSH in over the wired connection first (or 
 
 - Toolpath grid/ruler/working-area features verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
 - v0.4.0 deployed to a real PiBot V4.96 PRO setup and confirmed working: boots correctly, toolpath preview renders correctly against real machine coordinates
-- **The in-app updater itself has not yet been exercised on real hardware** - this v0.4.1 release exists specifically so that can happen (updating a real Pi from v0.4.0 to this release, through the button, not manually) before it's something anyone should rely on for a production update. Not yet re-captured as an SD card image for this release - the existing v0.3.0 image download link stays as-is until a full new image is captured and verified.
+- **The in-app updater itself has not yet been exercised on real hardware** - this v0.4.1 release exists specifically so that can happen (updating a real Pi from v0.4.0 to this release, through the button, not manually) before it's something anyone should rely on for a production update.
 
 ## Requirements
 
-- Raspberry Pi 4 recommended (tested on this board). Pi 3 and Pi Zero 2 W are architecturally compatible (same 64-bit-capable chip family) and expected to work but are untested by us - see the README's Hardware section for details. **The original Raspberry Pi Zero W will not work at all** - this image is 64-bit, and that board's chip has no 64-bit support, so it won't boot regardless of performance.
+- Raspberry Pi 4 recommended (tested on this board). Pi 3 and Pi Zero 2 W are architecturally compatible (same 64-bit-capable chip family) and expected to work but are untested by us - see the README's Hardware section for details. **The original Raspberry Pi Zero W will not work at all** on the 64-bit SD card image - that board's chip has no 64-bit support, so it won't boot regardless of performance.
 - A FluidNC-based controller (tested on PiBot V4.96 PRO) connected over USB serial
 - **Your controller must already be running FluidNC firmware with a working `config.yaml` for your machine before this will do anything useful.** This app is a web control interface for an existing, already-configured FluidNC setup — it does not flash firmware or write machine configuration for you. See [FluidNC's own documentation](http://wiki.fluidnc.com/en/home) if you haven't set that up yet.
 
