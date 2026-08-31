@@ -18,9 +18,9 @@ This project is an independent community effort and is not affiliated with or en
 
 ## Demo
 
-![Demo: connect, browse the sidebar, load a job, and run it on real FluidNC hardware](docs/screenshots/demo.gif)
+![Demo: tour the sidebar, load a job, and run it on real FluidNC hardware](docs/screenshots/demo.gif)
 
-Connecting to a real PiBot V4.96 PRO, a tour of the sidebar (Files, Plugins, Settings, About), loading a G-code file, and streaming it start to finish — live toolpath, live coordinates, live machine state, all against actual hardware. The "Job Complete" toast at the end is a UI mockup of what a push notification looks like, not a live-tested send — the Notifications plugin needs a provider (ntfy.sh, Discord, or Telegram) configured for that to fire for real.
+A tour of the sidebar (Plugins, Settings, Logs, About), then loading a G-code file from the File Manager and streaming it start to finish on a real PiBot V4.96 PRO — live toolpath, live coordinates, live machine state throughout. Recorded as a bare-machine test run (no endmill installed, Smart Plug Control disabled so the spindle never powers on) rather than an actual cut.
 
 ## Why this exists
 
