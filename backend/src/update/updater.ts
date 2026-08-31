@@ -154,10 +154,16 @@ export async function applyUpdate(tag: string, onProgress: (step: string) => voi
       const unixMode = (entry.attr >>> 16) & 0xffff;
       if (unixMode) chmodSync(destPath, unixMode);
     }
-    const extractedRoot = join(extractDir, topLevel);
-    if (!existsSync(extractedRoot)) throw new Error('Update archive had an unexpected layout');
+    // Every entry above was written with the zip's own "<repo>-<tag>/"
+    // wrapper folder already stripped from its path (destPath uses
+    // `relative`, not `name`) - so extractDir itself IS the extracted root,
+    // there's no nested topLevel folder to descend into here. A real repo
+    // always has its own package.json at the root; missing that means the
+    // archive's layout wasn't what was expected, not that this specific
+    // path is wrong.
+    if (!existsSync(join(extractDir, 'package.json'))) throw new Error('Update archive had an unexpected layout');
 
-    renameSync(extractedRoot, stagingDir);
+    renameSync(extractDir, stagingDir);
 
     onProgress('Installing dependencies…');
     await npm(['install'], stagingDir, onProgress);

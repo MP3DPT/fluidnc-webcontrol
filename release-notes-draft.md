@@ -1,11 +1,13 @@
-# fluidnc-webcontrol v0.4.5
+# fluidnc-webcontrol v0.4.6
 
 **No new SD card image with this release** — an ordinary follow-up like this doesn't need one; the [v0.4.3 image](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.3) is still the current recommended download for a fresh SD card, and its in-app auto-updater will pick this release up like any other. Use the **Update now** button on the About page, or the manual update steps in the README's "Running it on a Raspberry Pi" section.
 
 ## What's new since v0.4.3
 
 - **Fixed: the in-app updater was silently stripping the executable bit off every file it delivered** - discovered while building and verifying the v0.4.3 SD card image, where `scripts/sanitize-image.sh` (and presumably every other `.sh` script) came out of an in-app update as a plain, non-executable file. Root cause: extraction used a method that reads the zip's stored Unix permissions but never applies them to the extracted file. Fixed by extracting file-by-file and explicitly restoring each file's original permissions.
-- v0.4.4 shipped that fix but couldn't self-verify it - whatever code is *currently running* is what performs an update, so the v0.4.3 → v0.4.4 update was carried out by v0.4.3's own (still-buggy) extraction code, same chicken-and-egg pattern as the CORS/EACCES bugs earlier. **v0.4.5 is a real-hardware-verification release with no other changes**: with v0.4.4 already running (fix included), a v0.4.4 → v0.4.5 update through the button is the first one actually capable of exercising the fix.
+- v0.4.4 shipped that fix but couldn't self-verify it - whatever code is *currently running* is what performs an update, so the v0.4.3 → v0.4.4 update was carried out by v0.4.3's own (still-buggy) extraction code, same chicken-and-egg pattern as the CORS/EACCES bugs earlier.
+- **v0.4.5 was meant to be that real test and instead surfaced a second real bug**: the fix stripped the zip's wrapper folder from each file's path while writing it out, but a leftover check still looked for that wrapper folder afterward - so a v0.4.4 → v0.4.5 update failed immediately with "Update archive had an unexpected layout", before touching anything real. **Fixed in this v0.4.6**: that check now looks for the extracted `package.json` at the actual (unwrapped) root instead. Confirmed by re-running the real extraction logic locally against v0.4.5's own published archive zip: files now land in the right place, matching a real repo layout.
+- v0.4.6 is the next attempt at that real-hardware verification - a v0.4.4/v0.4.5 → v0.4.6 update through the button is what actually exercises both the extraction-location fix and the original permission-bit fix together for the first time.
 
 ## What's new since v0.3.0 (through v0.4.3)
 
@@ -31,7 +33,7 @@
 - Toolpath grid/ruler/working-area features verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
 - v0.4.0 deployed to a real PiBot V4.96 PRO setup and confirmed working: boots correctly, toolpath preview renders correctly against real machine coordinates
 - **The in-app updater is confirmed working end-to-end on real hardware.** The v0.4.0 → v0.4.1 and → v0.4.2 attempts surfaced the two bugs described above (real testing doing exactly what it's for); a v0.4.2 → v0.4.3 update through the button itself completed successfully: backup saved, download, `npm install`, both builds, the restart, and the automatic page reload all worked, with settings and every installed plugin's state intact afterward.
-- The executable-bit fix (shipped in v0.4.4) was verified directly against the real permission data in v0.4.3's own published GitHub archive zip before release - confirmed `scripts/*.sh` report as executable and get restored correctly - but **not yet confirmed through an actual live update**, for the chicken-and-egg reason explained above. This v0.4.5 release exists specifically to close that gap: a v0.4.4 → v0.4.5 update through the button, then checking `ls -la` on a deployed script over SSH, is the real test.
+- The executable-bit fix (v0.4.4) was verified against real permission data in v0.4.3's published archive zip before release. The layout fix (this v0.4.6) was verified by running the actual extraction code locally against v0.4.5's published archive zip, confirming `package.json` and every other file now land at the correct path. **Neither has yet been confirmed through an actual live in-app update** - v0.4.5 was meant to be that test and failed at the layout-detection step before ever reaching the permission-bit code, for the chicken-and-egg reason explained above. This v0.4.6 release is the next attempt at closing that gap for real - update through the button, then check `ls -la` on a deployed script over SSH.
 
 ## Requirements
 
