@@ -58,6 +58,8 @@ if [ "$AUTO_YES" != true ]; then
   echo "  - Remove every key from pi's authorized_keys"
   echo "  - Delete all SSH host keys (regenerated fresh on next real boot)"
   echo "  - Delete fluidnc-webcontrol's settings, plugin config, and G-code library"
+  echo "  - Delete the in-app updater's own working directory (any leftover"
+  echo "    previous-version backup, staging, or extract data)"
   echo "  - Clear machine-id, the orphaned swapfile, and the apt cache"
   if [ "$DO_SHUTDOWN" = true ]; then
     echo "  - Shut this Pi down when finished"
@@ -95,6 +97,20 @@ rm -f /var/lib/fluidnc-webcontrol/.npm_update-notifier-last-checked
 # Everything above is recreated with defaults on the app's next start -
 # nothing needs to pre-exist (same self-healing pattern SettingsStore and
 # FileLibraryStore already use for a normal fresh install).
+
+echo "==> Wiping the in-app updater's own working directory"
+# backend/src/update/updater.ts (see that file's own comments) keeps
+# installDir/.update/previous around on purpose after every successful
+# update, as a manual SSH rollback option - a full copy of whatever version
+# was running before, node_modules included. Genuinely useful on a live
+# install, but never something a *fresh* image should ship with: it can be
+# hundreds of MB (directly inflating the image PiShrink then has to carry),
+# and a brand new downloader has no "previous version" to roll back to
+# anyway. .update/staging and .update/extract are only ever supposed to be
+# transient mid-update scratch space (cleaned up by updater.ts itself in
+# both the success and failure paths), so finding either non-empty here
+# would mean a build was captured mid-update - also worth guarding against.
+rm -rf /opt/fluidnc-webcontrol/.update
 
 echo "==> Clearing /tmp"
 # Belt-and-suspenders, not a fix for an actual bug: confirmed /tmp is
