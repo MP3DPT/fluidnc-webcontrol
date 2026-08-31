@@ -1,14 +1,23 @@
 # fluidnc-webcontrol v0.4.7
 
-**No new SD card image with this release** — an ordinary follow-up like this doesn't need one; the [v0.4.3 image](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.3) is still the current recommended download for a fresh SD card, and its in-app auto-updater will pick this release up like any other. Use the **Update now** button on the About page, or the manual update steps in the README's "Running it on a Raspberry Pi" section.
+A ready-to-flash Raspberry Pi OS image with fluidnc-webcontrol pre-installed and running as a system service — no manual install needed. Plug in your PiBot (or any FluidNC controller) over USB, flash this image, and you're up in a few minutes. **This is now the default recommended image**, replacing v0.4.3 — same auto-updater as before, plus the fixes below baked in from the start instead of needing to be applied through it.
+
+## Flashing instructions
+
+1. Download `fluidnc-webcontrol.img.xz` below.
+2. Open [Raspberry Pi Imager](https://www.raspberrypi.com/software/), choose **"Use custom"**, and select the downloaded file directly (it decompresses automatically — no need to extract it yourself, and no OS customization step needed).
+3. Flash, then boot the Pi with the controller connected over USB (or over WiFi — see below).
+4. Open `http://<pi-ip-address>:8000` from any browser on the network.
+
+**Default login: `pi` / `raspberry`.** SSH in and run `passwd` to change it right after your first boot — same as you'd do for any device that ships with a known default. This is a deliberate, documented tradeoff (same one OctoPrint's own OctoPi image makes) rather than depending on Raspberry Pi Imager's OS customization, which has known reliability issues on current Raspberry Pi OS releases.
+
+Need WiFi instead of wired ethernet? SSH in over the wired connection first (or attach a monitor/keyboard) and run `sudo raspi-config` → System Options → Wireless LAN.
 
 ## What's new since v0.4.3
 
 - **Fixed: the in-app updater was silently stripping the executable bit off every file it delivered** - discovered while building and verifying the v0.4.3 SD card image, where `scripts/sanitize-image.sh` (and presumably every other `.sh` script) came out of an in-app update as a plain, non-executable file. Root cause: extraction used a method that reads the zip's stored Unix permissions but never applies them to the extracted file. Fixed by extracting file-by-file and explicitly restoring each file's original permissions.
-- v0.4.4 shipped that fix but couldn't self-verify it - whatever code is *currently running* is what performs an update, so the v0.4.3 → v0.4.4 update was carried out by v0.4.3's own (still-buggy) extraction code, same chicken-and-egg pattern as the CORS/EACCES bugs earlier.
-- v0.4.5 was meant to be that real test and instead surfaced a second real bug: the fix stripped the zip's wrapper folder from each file's path while writing it out, but a leftover check still looked for that wrapper folder afterward, so any update *attempted from* v0.4.4 failed immediately with "Update archive had an unexpected layout" - including a v0.4.4 → v0.4.6 attempt, since the bug lives in whichever version is *doing* the updating, not the target version. v0.4.4 couldn't reach *any* later version through the button until this was fixed and manually deployed once.
-- **v0.4.6 fixed that layout check**, and this time it was verified properly: not just against static zip data, but by running the *entire* extraction-and-swap sequence locally end to end (old content correctly moved aside, new content correctly moved into place, permissions restored) before shipping - the same rigor that was missing the first two times around.
-- v0.4.7 is a version-only bump giving v0.4.6 (now manually deployed, running the fixed code for the first time) something real to update to - the actual, final real-hardware confirmation of both fixes together.
+- That fix took three releases and one manual bootstrap to actually land, since whatever code is *currently running* is what performs an update - a bug in the updater can only ever be escaped via one manual SSH deploy, no matter how many newer fixed releases get published afterward. The full story, for anyone curious: v0.4.4 shipped the permission fix but its own extraction rewrite introduced a second bug (a leftover layout check still looked for the zip's wrapper folder at a path that no longer existed), so any update *attempted from* v0.4.4 failed immediately with "Update archive had an unexpected layout" - including attempts to reach a later, already-fixed version, since the bug lives in whichever version is doing the updating, not the target. v0.4.6 fixed that layout check and was verified by running the entire extraction-and-swap sequence locally end to end before shipping. v0.4.7 (this release) is the confirmed-clean result: updating from a manually-deployed v0.4.6 through the button restored full executable permissions on every script, verified over SSH afterward.
+- **`sanitize-image.sh` now also wipes the updater's own working directory** (`installDir/.update`) before an image is captured. The updater intentionally keeps a full copy of the previous version around after every successful update (a manual SSH rollback option), which is useful on a live install but was shipping as unnecessary bloat inside every fresh image otherwise - this build is noticeably smaller as a result (4.0GB used space vs. v0.4.3's 4.1GB).
 
 ## What's new since v0.3.0 (through v0.4.3)
 
@@ -18,10 +27,6 @@
 - **Configurable working area** (Settings → Working Area) — set your spoilboard's actual size in mm and the grid switches to that fixed size instead of auto-fitting; loading a job that doesn't fit shows an on-screen warning naming which side(s) it exceeds. Optional — leave at 0 to keep the auto-fit behavior.
 - **Prominent job progress overlay** on the Toolpath view — a big, easy-to-spot percentage and time-remaining readout while a job is running or paused, instead of only the small text next to the Run/Pause/Stop buttons.
 - **In-app updates, no SSH needed** — the About page now has an actual "Update now" button: shows the release notes, optionally bundles in any outdated plugins, optionally backs up all your settings first (you pick where to save it), then downloads/builds/restarts itself in place. A short service restart at the end, not a full reboot. Blocked in both directions from ever colliding with a running job - can't start an update while a job's running, can't start a job while an update's in progress.
-- v0.4.1, v0.4.2, and this v0.4.3 are small follow-ups to v0.4.0 specifically to validate that update mechanism end-to-end on real hardware - and it's taken a few rounds to actually get there:
-  - v0.4.1's update button failed immediately - the app's own release zip was being fetched from the browser, and GitHub's archive-download endpoint doesn't allow that (no CORS headers). Fails before the request ever leaves the browser, so nothing to clean up if you hit it.
-  - v0.4.2 moved that download server-side (not subject to CORS), which got further - download succeeded, then failed trying to create its own working directory *next to* the install directory. The service account that owns the install directory doesn't own its parent (e.g. `/opt`), so it can create files inside its own directory but not a sibling of it. Also fails before touching anything real, safe to retry.
-  - v0.4.3 keeps that working directory *inside* the install directory instead, needing no permission beyond what the account already has.
 
 ## What's included
 
@@ -33,15 +38,21 @@
 
 - Toolpath grid/ruler/working-area features verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
 - v0.4.0 deployed to a real PiBot V4.96 PRO setup and confirmed working: boots correctly, toolpath preview renders correctly against real machine coordinates
-- **The in-app updater is confirmed working end-to-end on real hardware.** The v0.4.0 → v0.4.1 and → v0.4.2 attempts surfaced the two bugs described above (real testing doing exactly what it's for); a v0.4.2 → v0.4.3 update through the button itself completed successfully: backup saved, download, `npm install`, both builds, the restart, and the automatic page reload all worked, with settings and every installed plugin's state intact afterward.
-- v0.4.6's fix was verified by running the complete extraction + permission-restore + swap sequence locally against a disposable scratch directory standing in for a real install dir, using v0.4.6's own real published archive zip: pre-existing content correctly moved aside, new content correctly moved into place, `package.json` at the right path, every script present. **Still not yet confirmed through an actual live in-app update** - that requires v0.4.6 to already be running (deployed manually once, since v0.4.4/v0.4.5 could never reach it through the button) and something newer to update to. This v0.4.7 release is that - update through the button, then check `ls -la` on a deployed script over SSH.
+- **The permission and layout-detection fixes are confirmed working end-to-end on real hardware**: a v0.4.6 → v0.4.7 update through the in-app button completed successfully, and `scripts/sanitize-image.sh` came out `-rwxr-xr-x` afterward as it should, instead of the previously-stripped `-rw-rw-r--`.
+- **This image itself round-tripped through a real sanitize → capture → shrink → reflash → boot cycle**: sanitized with the updated `scripts/sanitize-image.sh` (now also clearing the updater's `.update` working directory), captured and shrunk (30GB raw down to 4.0GB used space), reflashed onto a card from the compressed `.img.xz` (the same artifact downloaders get), and booted clean - SSH host keys regenerated, `pi`/`raspberry` login working, Settings and Plugins genuinely blank, `.update` directory confirmed absent, service started on its own with no manual steps, About page confirmed showing v0.4.7.
 
 ## Requirements
 
-- Raspberry Pi 4 recommended (tested on this board). Pi 3 and Pi Zero 2 W are architecturally compatible (same 64-bit-capable chip family) and expected to work but are untested by us - see the README's Hardware section for details. **The original Raspberry Pi Zero W will not work at all** on the 64-bit SD card image - that board's chip has no 64-bit support, so it won't boot regardless of performance.
+- Raspberry Pi 4 recommended (tested on this board). Pi 3 and Pi Zero 2 W are architecturally compatible (same 64-bit-capable chip family) and expected to work but are untested by us - see the README's Hardware section for details. **The original Raspberry Pi Zero W will not work at all** - this image is 64-bit, and that board's chip has no 64-bit support, so it won't boot regardless of performance.
 - A FluidNC-based controller (tested on PiBot V4.96 PRO) connected over USB serial
 - **Your controller must already be running FluidNC firmware with a working `config.yaml` for your machine before this will do anything useful.** This app is a web control interface for an existing, already-configured FluidNC setup — it does not flash firmware or write machine configuration for you. See [FluidNC's own documentation](http://wiki.fluidnc.com/en/home) if you haven't set that up yet.
 
 ## Full changelog
 
 See the [commit history](https://github.com/MP3DPT/fluidnc-webcontrol/commits/master) for everything included in this build.
+
+## Checksum
+
+```
+sha256: 129ef8154eba18ba5cc466a5de7e6272d6a350fc7cafa7049603cab454f25f75
+```
