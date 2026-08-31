@@ -86,16 +86,9 @@ If you're editing one of *this repo's own bundled* plugins, run `npm run sync-pl
 
 ### Pre-flashed SD card image (fastest)
 
-Skip the install entirely: download the pre-flashed image from the [v0.3.0 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.3.0) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.3.0/fluidnc-webcontrol.img.xz), ~738MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
+Skip the install entirely: download the pre-flashed image from the [v0.4.3 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.3) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.4.3/fluidnc-webcontrol.img.xz), ~798MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
 
-> **This image is v0.3.0 - it predates the in-app auto-updater (added in v0.4.0) and won't show an "Update now" button at all until you update it once manually.** A newer image covering everything through the current release is planned but not published yet. After first boot, SSH in and run:
-> ```bash
-> git clone https://github.com/MP3DPT/fluidnc-webcontrol.git ~/fluidnc-webcontrol-update
-> cd ~/fluidnc-webcontrol-update && sudo ./scripts/install-image.sh
-> sudo systemctl restart fluidnc-webcontrol
-> cd ~ && rm -rf ~/fluidnc-webcontrol-update
-> ```
-> This deploys the latest code *and* upgrades the sudoers grant the auto-updater's restart step needs (the v0.3.0 image only has the older shutdown-only version) in one go. From then on, in-app updates work normally.
+This image includes the in-app auto-updater (Settings → About → "Update now"), so future releases generally won't need a fresh image at all - see the release notes for what does still warrant one.
 
 - **Default login: `pi` / `raspberry` - change this password immediately after your first login** (`passwd`), same as you would for any device shipped with a known default.
 - After first boot, open `http://<pi-ip-address>:8000` from any browser on the network - no install step required.

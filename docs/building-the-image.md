@@ -184,7 +184,8 @@ the release notes:
 - After first boot, open `http://<pi-ip>:8000` from any browser on the
   network
 
-The [v0.3.0 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.3.0)
-is the current published image, verified end-to-end (headers, size, and a
-full-download sha256 match) after upload - a good reference for what the
-release notes and attached asset should look like.
+The [v0.4.3 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.3)
+is the current published image, verified end-to-end (round-tripped through
+a real sanitize -> capture -> shrink -> reflash -> boot cycle before
+publishing) - a good reference for what the release notes and attached
+asset should look like.
