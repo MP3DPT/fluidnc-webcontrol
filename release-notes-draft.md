@@ -25,7 +25,7 @@
 
 - Toolpath grid/ruler/working-area features verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
 - v0.4.0 deployed to a real PiBot V4.96 PRO setup and confirmed working: boots correctly, toolpath preview renders correctly against real machine coordinates
-- The in-app updater's real-hardware attempts (v0.4.0 → v0.4.1, then → v0.4.2) surfaced the two bugs described above - real testing doing exactly what it's for. **Still not yet confirmed working end-to-end** - this v0.4.3 release exists to retry that same real update, through the button, with both fixes in place, before it's something anyone should rely on for a production update.
+- **The in-app updater is now confirmed working end-to-end on real hardware.** The v0.4.0 → v0.4.1 and → v0.4.2 attempts surfaced the two bugs described above (real testing doing exactly what it's for); a v0.4.2 → v0.4.3 update through the button itself completed successfully: backup saved, download, `npm install`, both builds, the restart, and the automatic page reload all worked, with settings and every installed plugin's state intact afterward.
 
 ## Requirements
 
