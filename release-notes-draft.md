@@ -1,8 +1,12 @@
-# fluidnc-webcontrol v0.4.3
+# fluidnc-webcontrol v0.4.4
 
-**No new SD card image with this release** — this is a source-only release. If you're flashing a new SD card from scratch, keep using the [v0.3.0 image](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.3.0) for now (a fresh image covering everything through this release is planned separately). If you already have fluidnc-webcontrol running, use the in-app **Update now** button on the About page (new since v0.4.0) or the manual update steps in the README's "Running it on a Raspberry Pi" section.
+**No new SD card image with this release** — an ordinary follow-up like this doesn't need one; the [v0.4.3 image](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.3) is still the current recommended download for a fresh SD card, and its in-app auto-updater will pick this release up like any other. Use the **Update now** button on the About page, or the manual update steps in the README's "Running it on a Raspberry Pi" section.
 
-## What's new since v0.3.0
+## What's new since v0.4.3
+
+- **Fixed: the in-app updater was silently stripping the executable bit off every file it delivered** - discovered while building and verifying the v0.4.3 SD card image, where `scripts/sanitize-image.sh` (and presumably every other `.sh` script) came out of an in-app update as a plain, non-executable file. Root cause: extraction used a method that reads the zip's stored Unix permissions but never applies them to the extracted file. Fixed by extracting file-by-file and explicitly restoring each file's original permissions - verified against the real permission data GitHub's own archive-zip generation embeds, not just a plausible-sounding fix. Doesn't affect the app's own runtime behavior (nothing it does depends on exec'ing these scripts directly) - only matters if you SSH in and try to run one of the repo's own scripts by hand after an in-app update.
+
+## What's new since v0.3.0 (through v0.4.3)
 
 - **Toolpath grid now adapts to the job** — no more fixed 400mm plane a bigger part just runs off the edge of. It expands automatically to fit whatever's loaded, with 20% breathing room around it.
 - **Machine (0,0) anchored at a corner of the grid**, not its center — matches where a machine's actual home position sits, especially for the common all-positive-work-coordinates case.
@@ -25,7 +29,8 @@
 
 - Toolpath grid/ruler/working-area features verified in a local dev/browser environment against real and synthetic test files (small parts, an oversized 800×600mm test part, working-area limits both under and over)
 - v0.4.0 deployed to a real PiBot V4.96 PRO setup and confirmed working: boots correctly, toolpath preview renders correctly against real machine coordinates
-- **The in-app updater is now confirmed working end-to-end on real hardware.** The v0.4.0 → v0.4.1 and → v0.4.2 attempts surfaced the two bugs described above (real testing doing exactly what it's for); a v0.4.2 → v0.4.3 update through the button itself completed successfully: backup saved, download, `npm install`, both builds, the restart, and the automatic page reload all worked, with settings and every installed plugin's state intact afterward.
+- **The in-app updater is confirmed working end-to-end on real hardware.** The v0.4.0 → v0.4.1 and → v0.4.2 attempts surfaced the two bugs described above (real testing doing exactly what it's for); a v0.4.2 → v0.4.3 update through the button itself completed successfully: backup saved, download, `npm install`, both builds, the restart, and the automatic page reload all worked, with settings and every installed plugin's state intact afterward.
+- This release's fix (permission bits surviving extraction) was verified directly against the real permission data in v0.4.3's own published GitHub archive zip - confirmed `scripts/*.sh` report as executable and get restored correctly - rather than assumed to work. Not yet re-exercised through a live in-app update attempt the way v0.4.3 itself was.
 
 ## Requirements
 

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join } from 'node:path';
 import AdmZip from 'adm-zip';
 
@@ -132,7 +132,28 @@ export async function applyUpdate(tag: string, onProgress: (step: string) => voi
     // top-level folder - strip it, same idea as loader.ts's install() does
     // for a plugin zip's own wrapper folder.
     const topLevel = firstFile.entryName.split('/')[0];
-    zip.extractAllTo(extractDir, true);
+    const prefix = `${topLevel}/`;
+
+    // Extracted entry-by-entry (not zip.extractAllTo, which discards this)
+    // so each file's Unix permission bits survive - notably the executable
+    // bit on scripts/*.sh. GitHub's archive-zip generation stores them in
+    // the zip's external file attributes field (the upper 16 bits of
+    // entry.attr), the same convention Info-ZIP/Python's zipfile use.
+    // Confirmed the hard way: an earlier update left every .sh script
+    // downgraded to non-executable (rw-rw-r--), discovered while trying to
+    // run sanitize-image.sh by hand over SSH after an in-app update.
+    for (const entry of entries) {
+      if (entry.isDirectory) continue;
+      const name = entry.entryName.replace(/\\/g, '/');
+      if (!name.startsWith(prefix)) continue;
+      const relative = name.slice(prefix.length);
+      if (!relative) continue;
+      const destPath = join(extractDir, relative);
+      mkdirSync(dirname(destPath), { recursive: true });
+      writeFileSync(destPath, entry.getData());
+      const unixMode = (entry.attr >>> 16) & 0xffff;
+      if (unixMode) chmodSync(destPath, unixMode);
+    }
     const extractedRoot = join(extractDir, topLevel);
     if (!existsSync(extractedRoot)) throw new Error('Update archive had an unexpected layout');
 
