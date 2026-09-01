@@ -1,0 +1,31 @@
+{
+  "fields": [
+    {
+      "type": "hint",
+      "text": "Configure and generate from Tools → Surfacing / Facing instead - these are just the persisted defaults it remembers between uses."
+    },
+    { "key": "xDimension", "type": "number", "label": "X dimension", "unit": "mm", "default": 100 },
+    { "key": "yDimension", "type": "number", "label": "Y dimension", "unit": "mm", "default": 100 },
+    { "key": "mode", "type": "select", "label": "Mode", "default": "target-depth", "options": [
+      { "value": "target-depth", "label": "Target depth" }, { "value": "wasteboard", "label": "Wasteboard surfacing" }
+    ] },
+    { "key": "originH", "type": "select", "label": "Origin (X)", "default": "left", "options": [
+      { "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }
+    ] },
+    { "key": "originV", "type": "select", "label": "Origin (Y)", "default": "bottom", "options": [
+      { "value": "bottom", "label": "Bottom" }, { "value": "middle", "label": "Middle" }, { "value": "top", "label": "Top" }
+    ] },
+    { "key": "direction", "type": "select", "label": "Direction", "default": "horizontal", "options": [
+      { "value": "horizontal", "label": "Horizontal (rows along X)" }, { "value": "vertical", "label": "Vertical (rows along Y)" }, { "value": "spiral", "label": "Spiral" }
+    ] },
+    { "key": "targetDepth", "type": "number", "label": "Target depth", "unit": "mm", "default": 0.5 },
+    { "key": "depthOfCut", "type": "number", "label": "Depth of cut", "unit": "mm", "default": 0.5 },
+    { "key": "stepoverPercent", "type": "number", "label": "Stepover", "unit": "%", "default": 80 },
+    { "key": "overrun", "type": "number", "label": "Overrun", "unit": "mm", "default": 0 },
+    { "key": "retractHeight", "type": "number", "label": "Retract height", "unit": "mm", "default": 5 },
+    { "key": "bitDiameter", "type": "number", "label": "Bit diameter", "unit": "mm", "default": 25.4 },
+    { "key": "feedRate", "type": "number", "label": "Feed rate", "unit": "mm/min", "default": 1000 },
+    { "key": "spindleRpm", "type": "number", "label": "Spindle RPM", "default": 10000 },
+    { "key": "spindleDelay", "type": "number", "label": "Spindle delay", "unit": "s", "default": 0 }
+  ]
+}

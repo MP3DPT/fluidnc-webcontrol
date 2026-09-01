@@ -113,6 +113,8 @@ export interface PluginManifest {
   panel?: boolean;
   /** Which dashboard column the panel renders in - defaults to 'left' (below Actions), matching every panel plugin before this field existed. */
   panelColumn?: 'left' | 'right';
+  /** True if this plugin is a one-off tool (a G-code generator, a wizard) opened on demand from the sidebar's Tools tab as a modal, served at /api/plugins/<id>/dialog - see backend/src/plugins/types.ts for the full rationale. */
+  tool?: boolean;
 }
 
 export type SchemaFieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'hint';

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, ScrollText, Settings as SettingsIcon, Terminal, TriangleAlert } from 'lucide-react';
+import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, ScrollText, Settings as SettingsIcon, Terminal, TriangleAlert, Wrench } from 'lucide-react';
 import { useSocket } from './hooks/useSocket';
+import type { PluginInfo } from './types';
 import { parseToolpath, xyBoundsOf } from './gcode/parseToolpath';
 import { renderThumbnail } from './gcode/renderThumbnail';
 import { extractMetadata, formatMetadataSummary } from './gcode/extractMetadata';
@@ -12,6 +13,8 @@ import { JogPanel } from './components/JogPanel';
 import { ActionsPanel } from './components/ActionsPanel';
 import { PluginPanels } from './components/PluginPanels';
 import { PluginsManagerPanel } from './components/PluginsManagerPanel';
+import { ToolsPanel } from './components/ToolsPanel';
+import { PluginToolDialog } from './components/PluginToolDialog';
 import { AppSettingsPanel } from './components/AppSettingsPanel';
 import { AboutPanel } from './components/AboutPanel';
 import { UpdateModal } from './components/UpdateModal';
@@ -167,6 +170,7 @@ export default function App() {
   const dragCounter = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [openToolPlugin, setOpenToolPlugin] = useState<PluginInfo | null>(null);
   const [toolpathViewOpen, setToolpathViewOpen] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [toolpathAboveGrid, setToolpathAboveGrid] = useState(
@@ -176,11 +180,23 @@ export default function App() {
     localStorage.setItem(TOOLPATH_ABOVE_GRID_KEY, String(toolpathAboveGrid));
   }, [toolpathAboveGrid]);
 
+  // Stable reference across renders (not a fresh object literal every time) -
+  // PluginToolDialog's postCoreState effect depends on this, and a new
+  // object identity on every unrelated App re-render (WS traffic arrives
+  // constantly) would re-fire it with whatever `plugin.config` currently is,
+  // which can still be a render behind the just-persisted optimistic update
+  // in the dialog's own iframe and stomp it back to stale data.
+  const workingArea = useMemo(
+    () => ({ width: settings?.general.spoilboardWidth ?? 0, height: settings?.general.spoilboardHeight ?? 0 }),
+    [settings?.general.spoilboardWidth, settings?.general.spoilboardHeight],
+  );
+
   return (
     <>
       <Sidebar
         items={[
           { key: 'files', icon: <FolderOpen size={22} />, label: 'Files' },
+          { key: 'tools', icon: <Wrench size={22} />, label: 'Tools' },
           { key: 'plugins', icon: <Puzzle size={22} />, label: 'Plugins' },
           { key: 'settings', icon: <SettingsIcon size={22} />, label: 'Settings' },
           { key: 'logs', icon: <ScrollText size={22} />, label: 'Logs' },
@@ -207,6 +223,16 @@ export default function App() {
         />
       </Drawer>
 
+      <Drawer open={activePanel === 'tools'} title="Tools" onClose={() => setActivePanel(null)}>
+        <ToolsPanel
+          plugins={plugins}
+          onOpen={(plugin) => {
+            setOpenToolPlugin(plugin);
+            setActivePanel(null);
+          }}
+        />
+      </Drawer>
+
       <Drawer open={activePanel === 'plugins'} title="Plugins" onClose={() => setActivePanel(null)}>
         <PluginsManagerPanel plugins={plugins} send={send} />
       </Drawer>
@@ -218,6 +244,17 @@ export default function App() {
       <Drawer open={activePanel === 'about'} title="About" onClose={() => setActivePanel(null)}>
         <AboutPanel latestVersion={latestAppVersion} onOpenUpdate={() => setUpdateModalOpen(true)} />
       </Drawer>
+
+      {openToolPlugin && (
+        <PluginToolDialog
+          plugin={openToolPlugin}
+          onClose={() => setOpenToolPlugin(null)}
+          send={send}
+          invokePluginAction={invokePluginAction}
+          onLoadGcode={applyLoadedFile}
+          workingArea={{ width: settings?.general.spoilboardWidth ?? 0, height: settings?.general.spoilboardHeight ?? 0 }}
+        />
+      )}
 
       {updateModalOpen && latestAppVersion && (
         <UpdateModal

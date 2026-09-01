@@ -39,6 +39,14 @@
       "author": "fluidnc-webcontrol",
       "description": "Touch-plate Z probing - probes down, zeros work Z corrected for the plate's thickness, then retracts clear. Bundled as a plugin (rather than a core feature) since Z-probe hardware varies a lot - swap this out for a different plugin if yours works differently.",
       "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/zprobe-touchplate.zip"
+    },
+    {
+      "id": "surfacing-generator",
+      "name": "Surfacing / Facing",
+      "version": "0.1.0",
+      "author": "fluidnc-webcontrol",
+      "description": "Generates a raster facing toolpath for flattening a spoilboard or panel - set your dimensions and cutter, generate, and it loads straight into the Program tab ready to run.",
+      "download": "https://raw.githubusercontent.com/MP3DPT/fluidnc-webcontrol/master/plugins/surfacing-generator.zip"
     }
   ]
 }

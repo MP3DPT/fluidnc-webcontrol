@@ -2047,6 +2047,58 @@ button.ghost:not(:disabled):hover {
 }
 
 /* ============================================================
+   Plugin tool dialog - the on-demand modal counterpart to a plugin
+   panel (see PluginToolDialog.tsx / PluginPanels.tsx)
+   ============================================================ */
+.tool-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: var(--space-4);
+}
+
+.tool-dialog {
+  width: min(40rem, 100%);
+  max-height: calc(100vh - var(--space-6));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  /* Content is sized to fit exactly (see .tool-dialog-frame) so this
+     shouldn't normally engage - kept as a last-resort fallback for a very
+     short viewport rather than silently clipping content. */
+  overflow-y: auto;
+}
+
+.tool-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.tool-dialog-header h3 {
+  margin: 0;
+}
+
+.tool-dialog-frame {
+  border: none;
+  width: 100%;
+  /* Sized exactly to its content via the "contentHeight" bridge message
+     (see PluginToolDialog.tsx) - this fallback only shows briefly before
+     the iframe's first report arrives. .tool-dialog's own max-height above
+     is the real backstop if content is ever taller than the viewport. */
+  min-height: 20rem;
+}
+
+/* ============================================================
    Settings / Plugins drawer content
    ============================================================ */
 .drawer-panel {
@@ -2130,6 +2182,26 @@ code {
 
 .plugin-card-title-row strong {
   font-size: 0.9375rem;
+}
+
+.plugin-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.plugin-card-tool-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
 }
 
 .plugin-meta {
