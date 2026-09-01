@@ -15,7 +15,7 @@ import { Card, CardHeader, CardContent } from './ui/Card';
 import { CoordinateDisplay } from './ui/CoordinateDisplay';
 import { Divider } from './ui/Divider';
 import { ParkCluster } from './ParkCluster';
-import type { Position, Settings } from '../types';
+import type { MachineState, Position, Settings } from '../types';
 
 const DEFAULT_STEP_SIZES = [0.1, 1, 10, 50];
 const FEED_INCREMENT = 10;
@@ -34,12 +34,13 @@ interface Props {
   disabled: boolean;
   /** Whether Park's real prerequisites (soft limits enabled, max travel configured - see connection.ts's park()) are actually met, not just whether the connection is open. */
   parkReady: boolean;
+  machineState: MachineState | null;
   workPosition: Position | null;
   settings: Settings | null;
   send: (message: Record<string, unknown>) => void;
 }
 
-export function JogPanel({ disabled, parkReady, workPosition, settings, send }: Props) {
+export function JogPanel({ disabled, parkReady, machineState, workPosition, settings, send }: Props) {
   const stepSizes = settings?.general.jogStepSizes ?? DEFAULT_STEP_SIZES;
   const [step, setStep] = useState(1);
   const [feedrate, setFeedrate] = useState(1000);
@@ -225,6 +226,7 @@ export function JogPanel({ disabled, parkReady, workPosition, settings, send }: 
             <ParkCluster
               disabled={disabled}
               parkReady={parkReady}
+              machineState={machineState}
               defaultParkX={settings?.general.parkX ?? 'home'}
               defaultParkY={settings?.general.parkY ?? 'home'}
               send={send}

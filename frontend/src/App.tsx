@@ -508,7 +508,14 @@ export default function App() {
           </Card>
         </div>
         <div className="column">
-          <JogPanel disabled={controlsDisabled} parkReady={parkReady} workPosition={workPosition} settings={settings} send={send} />
+          <JogPanel
+            disabled={controlsDisabled}
+            parkReady={parkReady}
+            machineState={status?.state ?? null}
+            workPosition={workPosition}
+            settings={settings}
+            send={send}
+          />
           <PluginPanels
             plugins={plugins}
             column="right"

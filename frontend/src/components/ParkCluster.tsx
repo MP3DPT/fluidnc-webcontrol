@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react';
 import { CornerBracket } from './CornerBracket';
+import type { MachineState } from '../types';
 
 type Side = 'home' | 'far';
 
@@ -7,6 +8,8 @@ interface Props {
   disabled: boolean;
   /** Whether Park's real prerequisites (soft limits enabled, max travel configured - see connection.ts's park()) are actually met, not just whether the connection is open. */
   parkReady: boolean;
+  /** Current controller state, or null before any status report has arrived. Park is a G53 machine-coordinate move - it needs a real machine position, which only exists once $H has actually run (an un-homed machine that requires homing sits in Alarm until then, same as after any other alarm/fault). */
+  machineState: MachineState | null;
   /** The corner Settings -> Job Completion currently has saved - what the big Park button targets, and also what a finished job auto-parks to when that's the configured action. */
   defaultParkX: Side;
   defaultParkY: Side;
@@ -25,8 +28,22 @@ interface Props {
  * Job Completion default, so it always matches what a finished job would
  * auto-park to.
  */
-export function ParkCluster({ disabled, parkReady, defaultParkX, defaultParkY, send }: Props) {
-  const parkTo = (x: Side, y: Side) => send({ type: 'park', parkX: x, parkY: y });
+export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, defaultParkY, send }: Props) {
+  // Left clickable (not disabled) rather than gated purely by state, since
+  // "why won't this button do anything" is worse UX than a click that
+  // explains itself - same reasoning ProgramPanel's Run uses a confirm()
+  // for its own "already finished" case instead of just disabling Run.
+  const parkTo = (x: Side, y: Side) => {
+    if (machineState !== 'Idle') {
+      window.alert(
+        machineState === 'Run' || machineState === 'Jog' || machineState === 'Hold'
+          ? "The machine is currently moving - wait for it to finish before parking."
+          : 'Home the machine first (the Home button) - Park moves to a machine-coordinate corner, which only exists once homing has run.',
+      );
+      return;
+    }
+    send({ type: 'park', parkX: x, parkY: y });
+  };
   const parkDisabled = disabled || !parkReady;
   const title = disabled
     ? 'Connect first'
