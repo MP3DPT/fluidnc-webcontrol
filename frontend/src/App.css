@@ -551,10 +551,7 @@ main {
   width: 100%;
   padding: var(--space-5);
   display: grid;
-  /* Right column is wider than the left one - Jog Control now shares its
-     row with ParkCluster (see .jog-cluster) and needs the extra width so
-     that sits beside the compass/Z strip instead of wrapping under it. */
-  grid-template-columns: 340px minmax(0, 1fr) 440px;
+  grid-template-columns: 340px minmax(0, 1fr) 360px;
   gap: var(--space-5);
 }
 
@@ -597,7 +594,7 @@ main {
 /* 1200-1599px: keep the full three-column layout, tighten proportions. */
 @media (max-width: 1599px) {
   main {
-    grid-template-columns: 300px minmax(0, 1fr) 380px;
+    grid-template-columns: 300px minmax(0, 1fr) 320px;
     gap: var(--space-4);
     padding: var(--space-4);
   }
@@ -1669,7 +1666,7 @@ button.ghost:not(:disabled):hover {
 .jog-cluster {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-3);
   align-items: center;
   width: 100%;
 }
@@ -1681,20 +1678,23 @@ button.ghost:not(:disabled):hover {
 }
 
 /* Stacked (grid on top, Park button below spanning its width) rather than
-   side-by-side - there's real free space around this cluster (see JogPanel),
-   and the grid cells match .jog-btn's own size so the whole Park block reads
-   as part of the same control cluster, not a cramped afterthought. */
+   side-by-side - keeps this whole cluster narrow enough to sit in the same
+   row as the compass/Z strip without widening the column that holds it
+   (that was tried - widening the column stretched every OTHER card in it
+   too, e.g. Z-Probe, leaving a lot of dead space nothing needed). Sized
+   down from .jog-btn's own size for the same reason: there just isn't
+   width to spare here. */
 .park-cluster {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-items: stretch;
 }
 
 .park-grid {
   display: grid;
-  grid-template-columns: repeat(2, 3.25rem);
-  grid-template-rows: repeat(2, 3.25rem);
+  grid-template-columns: repeat(2, 2rem);
+  grid-template-rows: repeat(2, 2rem);
   gap: var(--space-2);
 }
 
@@ -1724,11 +1724,11 @@ button.ghost:not(:disabled):hover {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: 0.2rem;
   width: 100%;
-  height: 2.25rem;
+  height: 1.75rem;
   padding: 0;
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   background: var(--surface-hover);
   color: var(--text-muted);
