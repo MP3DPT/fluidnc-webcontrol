@@ -6,6 +6,8 @@ A free, open-source (MIT), community-driven web control UI for [FluidNC](https:/
 
 This project is an independent community effort and is not affiliated with or endorsed by the FluidNC project, Bart Dring, or any controller manufacturer.
 
+📖 **[Full user guide, plugin docs, and troubleshooting → the wiki](https://github.com/MP3DPT/fluidnc-webcontrol/wiki)**
+
 > **Before you start:** your controller must already be running FluidNC firmware with a working `config.yaml` for your machine. This is a web control interface for an *existing, already-configured* FluidNC setup — it does not flash firmware or write machine configuration for you. Haven't set that up yet? See [FluidNC's own documentation](http://wiki.fluidnc.com/en/home) first.
 
 | Main screen | File Manager | Plugins |
@@ -68,27 +70,29 @@ Open the **Plugins** tab in the sidebar to:
 - **Browse** what's available — the app fetches [`plugins.json`](plugins.json) from this repo and lists anything you don't already have installed, one click to install. This needs the Pi to have internet access, since it's reaching out to GitHub.
 - **Install from a `.zip`** manually, for a plugin you built yourself, got somewhere else, or grabbed on another device — this works with no internet at all, which matters since running the CNC itself (jogging, streaming G-code) never needs internet either, only a local network between the Pi and your browser. If Browse can't reach the index, the app tells you so and points at this instead.
 
-Shipped today:
+Shipped today (wiki links include setup steps and troubleshooting):
 
 | Plugin | What it does | Setup |
 |---|---|---|
-| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM | [Needs `gpiod`](plugins/fan-shim-control/README.md) |
-| Notifications | Pushes alarms, job-completion, and connection-loss events to ntfy.sh, Discord, or Telegram | [Needs a provider account](plugins/notifications/README.md) |
-| Smart Plug Control | Turns the spindle's smart plug on before a job (with a spin-up delay) and off after, regardless of how the job ended | [Needs a one-time Tuya key extraction](plugins/smart-plug-control/README.md) |
-| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen | [Needs `ffmpeg` + `v4l-utils`](plugins/webcam-preview/README.md) |
-| Z-Probe \| Touch Plate | Touch-plate Z probing with plate-thickness correction | None — just enter your plate's dimensions |
+| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM | [Needs `gpiod`](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Fan-SHIM-Control) |
+| Notifications | Pushes alarms, job-completion, and connection-loss events to ntfy.sh, Discord, or Telegram | [Needs a provider account](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Notifications) |
+| Smart Plug Control | Turns the spindle's smart plug on before a job (with a spin-up delay) and off after, regardless of how the job ended | [Needs a one-time Tuya key extraction](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Smart-Plug-Control) |
+| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen | [Needs `ffmpeg` + `v4l-utils`](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Webcam-Preview) |
+| Z-Probe \| Touch Plate | Touch-plate Z probing with plate-thickness correction | [None — just enter your plate's dimensions](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Z-Probe-Touch-Plate) |
 
-Writing your own: a plugin gets a `PluginContext` — the serial connection, the program runner, its own settings store, `registerBeforeRun`/`registerAction` hooks, and its own Express router under `/api/plugins/<id>`. Any folder under [`plugins/`](plugins) is a working example; `backend/src/plugins/types.ts` has the exact interface.
+See the wiki's [Plugins overview](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugins) for the full picture, and [Writing a Plugin](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Writing-a-Plugin) for the complete `PluginContext` API if you want to build your own. Short version: a plugin gets a `PluginContext` — the serial connection, the program runner, its own settings store, `registerBeforeRun`/`registerAction` hooks, and its own Express router under `/api/plugins/<id>`. Any folder under [`plugins/`](plugins) is a working example; `backend/src/plugins/types.ts` has the exact interface.
 
 If you're editing one of *this repo's own bundled* plugins, run `npm run sync-plugins` afterward - `plugins/<id>/` is just the editable source, and both `plugins/<id>.zip` (what Browse actually installs) and `backend/plugins-bundled/<id>/` (what a fresh install copies in) are separate generated copies that won't update themselves. `npm run sync-plugins:check` (non-destructive) is what CI/a pre-commit hook would run to catch a forgotten sync.
 
 ## Running it on a Raspberry Pi
 
+For a step-by-step walkthrough (including first connection and what to do next), see the wiki's [Getting Started](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Getting-Started) page. Short version below.
+
 ### Pre-flashed SD card image (fastest)
 
 Skip the install entirely: download the pre-flashed image from the [v0.4.7 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.7) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.4.7/fluidnc-webcontrol.img.xz), ~745MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
 
-This image includes the in-app auto-updater (Settings → About → "Update now"), so future releases generally won't need a fresh image at all - see the release notes for what does still warrant one.
+This image includes the in-app auto-updater (Settings → About → "Update now"), so future releases generally won't need a fresh image at all - see the release notes, or the wiki's [Updating the App](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Updating-the-App), for what does still warrant one.
 
 - **Default login: `pi` / `raspberry` - change this password immediately after your first login** (`passwd`), same as you would for any device shipped with a known default.
 - After first boot, open `http://<pi-ip-address>:8000` from any browser on the network - no install step required.
