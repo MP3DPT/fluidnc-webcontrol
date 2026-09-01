@@ -38,9 +38,9 @@ function currentConfig(ctx) {
     stepoverPercent: Number(c.stepoverPercent ?? 80),
     overrun: Number(c.overrun ?? 0),
     retractHeight: Number(c.retractHeight ?? 5),
-    bitDiameter: Number(c.bitDiameter ?? 25.4),
-    feedRate: Number(c.feedRate ?? 1000),
-    spindleRpm: Number(c.spindleRpm ?? 10000),
+    bitDiameter: Number(c.bitDiameter ?? 25),
+    feedRate: Number(c.feedRate ?? 2000),
+    spindleRpm: Number(c.spindleRpm ?? 12000),
     spindleDelay: Number(c.spindleDelay ?? 0),
   };
 }
@@ -329,8 +329,8 @@ function renderDialogHtml() {
   var fields = ['xDimension', 'yDimension', 'direction', 'targetDepth', 'depthOfCut', 'stepoverPercent', 'overrun', 'retractHeight', 'bitDiameter', 'feedRate', 'spindleRpm', 'spindleDelay'];
   var defaults = {
     xDimension: 100, yDimension: 100, direction: 'horizontal', targetDepth: 0.5, depthOfCut: 0.5,
-    stepoverPercent: 80, overrun: 0, retractHeight: 5, bitDiameter: 25.4, feedRate: 1000,
-    spindleRpm: 10000, spindleDelay: 0, originH: 'left', originV: 'bottom', mode: 'target-depth',
+    stepoverPercent: 80, overrun: 0, retractHeight: 5, bitDiameter: 25, feedRate: 2000,
+    spindleRpm: 12000, spindleDelay: 0, originH: 'left', originV: 'bottom', mode: 'target-depth',
   };
   var els = {};
   fields.forEach(function (id) { els[id] = document.getElementById(id); });
