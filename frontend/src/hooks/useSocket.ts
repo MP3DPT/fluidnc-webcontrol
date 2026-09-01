@@ -117,6 +117,13 @@ export function useSocket() {
           case 'feedback':
             appendLog('feedback', msg.data as string);
             break;
+          // Anything else the controller sent back - most commonly a
+          // $-setting readback (e.g. "$23=3") from typing "$23" or "$$"
+          // into the Console. See connection.ts's handleLine/'message' for
+          // what does and doesn't end up here.
+          case 'message':
+            appendLog('message', msg.data as string);
+            break;
           case 'alarm':
             appendLog('alarm', `ALARM:${msg.data}`);
             break;
@@ -207,6 +214,12 @@ export function useSocket() {
     wsRef.current?.send(JSON.stringify(message));
   }, []);
 
+  // Console's own log is client-side-only state to begin with (unlike the
+  // Logs drawer's backend-held history), so unlike that panel's "Clear" this
+  // one can just truncate the array directly - no need for a timestamp
+  // filter to survive a remount.
+  const clearConsole = useCallback(() => setLog([]), []);
+
   /** Same plugin-action call the Settings modal's test buttons use, but returns a Promise correlated by requestId - lets an on-dashboard plugin panel (see PluginPanels.tsx) await its own result instead of only getting a fire-and-forget log line. */
   const invokePluginAction = useCallback((pluginId: string, actionId: string, params?: unknown): Promise<unknown> => {
     return new Promise((resolve, reject) => {
@@ -240,5 +253,6 @@ export function useSocket() {
     updateStatus,
     send,
     invokePluginAction,
+    clearConsole,
   };
 }

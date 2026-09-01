@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Puzzle, ScrollText, Settings as SettingsIcon, Terminal, TriangleAlert, Wrench } from 'lucide-react';
+import { Box, ChevronDown, FolderOpen, Info, ListChecks, Maximize, Maximize2, Minimize2, Puzzle, ScrollText, Settings as SettingsIcon, Terminal, Trash2, TriangleAlert, Wrench } from 'lucide-react';
 import { useSocket } from './hooks/useSocket';
 import type { PluginInfo } from './types';
 import { parseToolpath, xyBoundsOf } from './gcode/parseToolpath';
@@ -58,6 +58,7 @@ export default function App() {
     updateStatus,
     send,
     invokePluginAction,
+    clearConsole,
   } = useSocket();
   const controlsDisabled = !connectionOpen;
   // Park additionally needs soft limits enabled and max travel configured -
@@ -176,8 +177,18 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [openToolPlugin, setOpenToolPlugin] = useState<PluginInfo | null>(null);
+  // Lives here, not inside LogsPanel itself - the Logs Drawer fully
+  // unmounts when closed (see ui/Drawer.tsx's `if (!open) return null`), so
+  // state local to LogsPanel was silently forgotten every time the drawer
+  // closed, making "Clear" reappear-on-reopen instead of actually staying
+  // cleared for the rest of the browser session (confirmed the hard way -
+  // clicking Home to reach the Actions panel closes the Logs drawer first).
+  // Backend log history itself still survives a real page reload either
+  // way, by design (see LogsPanel's own comment) - only this filter resets.
+  const [logsClearedAt, setLogsClearedAt] = useState(0);
   const [toolpathViewOpen, setToolpathViewOpen] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [consoleExpanded, setConsoleExpanded] = useState(false);
   const [toolpathAboveGrid, setToolpathAboveGrid] = useState(
     () => localStorage.getItem(TOOLPATH_ABOVE_GRID_KEY) !== 'false',
   );
@@ -225,6 +236,8 @@ export default function App() {
           programStatus={programStatus}
           settings={settings}
           plugins={plugins}
+          clearedAt={logsClearedAt}
+          onClear={() => setLogsClearedAt(Date.now())}
         />
       </Drawer>
 
@@ -323,7 +336,7 @@ export default function App() {
         <div className="column">
           <ConnectPanel ports={ports} connectionOpen={connectionOpen} wsReady={wsReady} send={send} />
           <StatusPanel status={status} />
-          <ActionsPanel disabled={controlsDisabled} parkReady={parkReady} estopActive={connectionOpen} send={send} />
+          <ActionsPanel disabled={controlsDisabled} estopActive={connectionOpen} send={send} />
           <PluginPanels
             plugins={plugins}
             column="left"
@@ -451,14 +464,31 @@ export default function App() {
                       </>
                     ),
                     actions: (
-                      <Switch
-                        size="sm"
-                        tone="success"
-                        labelPosition="start"
-                        checked={autoScroll}
-                        onChange={setAutoScroll}
-                        label="Auto-scroll"
-                      />
+                      <div className="row console-tab-actions">
+                        <Switch
+                          size="sm"
+                          tone="success"
+                          labelPosition="start"
+                          checked={autoScroll}
+                          onChange={setAutoScroll}
+                          label="Auto-scroll"
+                        />
+                        <IconButton
+                          aria-label="Clear console"
+                          title="Clear console"
+                          onClick={clearConsole}
+                          disabled={log.length === 0}
+                        >
+                          <Trash2 size={14} />
+                        </IconButton>
+                        <IconButton
+                          aria-label={consoleExpanded ? 'Collapse console' : 'Expand console'}
+                          title={consoleExpanded ? 'Collapse console' : 'Expand console'}
+                          onClick={() => setConsoleExpanded((v) => !v)}
+                        >
+                          {consoleExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                        </IconButton>
+                      </div>
                     ),
                     content: (
                       <ConsolePanel
@@ -467,6 +497,7 @@ export default function App() {
                         autoFeedEnabled={settings?.general.consoleAutoFeedEnabled ?? true}
                         defaultFeed={settings?.general.consoleDefaultFeed ?? 300}
                         autoScroll={autoScroll}
+                        expanded={consoleExpanded}
                         send={send}
                       />
                     ),
@@ -477,7 +508,7 @@ export default function App() {
           </Card>
         </div>
         <div className="column">
-          <JogPanel disabled={controlsDisabled} workPosition={workPosition} settings={settings} send={send} />
+          <JogPanel disabled={controlsDisabled} parkReady={parkReady} workPosition={workPosition} settings={settings} send={send} />
           <PluginPanels
             plugins={plugins}
             column="right"

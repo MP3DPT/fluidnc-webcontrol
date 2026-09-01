@@ -74,7 +74,12 @@ export function ProgramPanel({
           <FileUp size={15} />
           Load File…
         </button>
-        <button onClick={onClear} disabled={disabled || isActive || !hasProgram}>
+        {/* Unlike Load/Run/Pause/etc, Clear never needs the machine connection -
+            it only forgets the locally-loaded file and tells the backend to drop
+            its copy of the program, neither of which touches the serial port. Only
+            real reasons to disable it: nothing loaded yet, or a job using it is
+            actively running/paused. */}
+        <button onClick={onClear} disabled={isActive || !hasProgram}>
           <Trash2 size={15} />
           Clear
         </button>

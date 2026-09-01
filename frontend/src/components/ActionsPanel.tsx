@@ -1,17 +1,19 @@
-import { Home, MapPin, RotateCcw, Unlock as UnlockIcon, Zap } from 'lucide-react';
+import { Home, RotateCcw, Unlock as UnlockIcon, Zap } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { EmergencyStopButton } from './EmergencyStopButton';
 
 interface Props {
   disabled: boolean;
-  /** Whether Park's real prerequisites (soft limits enabled, max travel configured - see connection.ts's park()) are actually met, not just whether the connection is open. */
-  parkReady: boolean;
   /** Whether the e-stop should be active (the connection is open) rather than muted/disabled. */
   estopActive: boolean;
   send: (message: Record<string, unknown>) => void;
 }
 
-export function ActionsPanel({ disabled, parkReady, estopActive, send }: Props) {
+// Park used to live here - moved next to Jog Control (see ParkCluster,
+// rendered from JogPanel) since that's where someone actually reaches for
+// it: clearing the spindle out of the way while placing material, right
+// alongside the jog buttons they'd otherwise use for the same job.
+export function ActionsPanel({ disabled, estopActive, send }: Props) {
   return (
     <Card>
       <CardHeader>
@@ -28,22 +30,7 @@ export function ActionsPanel({ disabled, parkReady, estopActive, send }: Props) 
             <UnlockIcon size={15} />
             Unlock
           </button>
-          <button
-            className="full-width"
-            disabled={disabled || !parkReady}
-            title={
-              disabled
-                ? 'Connect first'
-                : parkReady
-                  ? 'Rapids to the corner set in Settings → Job Completion'
-                  : 'Needs soft limits enabled and max travel configured - see Settings → Job Completion'
-            }
-            onClick={() => send({ type: 'park' })}
-          >
-            <MapPin size={15} />
-            Park
-          </button>
-          <button className="danger full-width" disabled={disabled} onClick={() => send({ type: 'reset' })}>
+          <button className="warning full-width" disabled={disabled} onClick={() => send({ type: 'reset' })}>
             <RotateCcw size={15} />
             Soft Reset
           </button>

@@ -55,7 +55,7 @@ export interface ProbeResult {
 
 export interface LogEntry {
   id: number;
-  kind: 'welcome' | 'feedback' | 'alarm' | 'error' | 'info';
+  kind: 'welcome' | 'feedback' | 'alarm' | 'error' | 'info' | 'message';
   text: string;
 }
 
@@ -94,7 +94,7 @@ export interface GeneralSettings {
   spoilboardHeight: number;
   /** What happens once a job finishes cleanly - see backend/src/settings/store.ts for the full reasoning (folds in what used to be smart-plug-control's own return-to-origin toggle). */
   jobCompletionAction: 'stay' | 'origin' | 'park';
-  /** 'home' = same side as that axis's homing switch (machine 0); 'far' = the opposite end of its configured travel. Only meaningful when jobCompletionAction is 'park', but also used by the standalone Park button in the Actions panel. */
+  /** 'home' = same side as that axis's homing switch (machine 0); 'far' = the opposite end of its configured travel. Only meaningful when jobCompletionAction is 'park', but also what the standalone Park button (see ParkCluster, next to Jog Control) targets. */
   parkX: 'home' | 'far';
   parkY: 'home' | 'far';
 }

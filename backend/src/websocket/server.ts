@@ -40,7 +40,11 @@ type ClientMessage =
   | { type: 'systemReboot' }
   | { type: 'systemShutdown' }
   | { type: 'getFirmwareSettings' }
-  | { type: 'park' };
+  // parkX/parkY let a caller park to a specific corner on demand (the
+  // main-screen corner buttons) without touching the saved Settings ->
+  // Job Completion default - omitting them (the "Park" button proper)
+  // falls back to that default, same as the post-job auto-park above.
+  | { type: 'park'; parkX?: 'home' | 'far'; parkY?: 'home' | 'far' };
 
 function broadcast(wss: WebSocketServer, message: unknown) {
   const payload = JSON.stringify(message);
@@ -129,6 +133,13 @@ export async function attachWebSocketServer(
   connection.on('status', forward('status'));
   connection.on('alarm', forward('alarm'));
   connection.on('feedback', forward('feedback'));
+  // Anything the controller sends back that isn't status/feedback/ok/error -
+  // most notably $-setting readbacks like "$23=3" from typing "$23" or "$$"
+  // in the Console. Previously silently dropped here (connection.ts still
+  // emitted it, nothing forwarded it), so Console showed nothing at all for
+  // those - confirmed the hard way asking for a $23 value to fix Park's
+  // corner-direction math.
+  connection.on('message', forward('message'));
   connection.on('probeResult', forward('probeResult'));
   connection.on('welcome', forward('welcome'));
   connection.on('open', forward('connectionOpen'));
@@ -208,8 +219,8 @@ export async function attachWebSocketServer(
             await connection.home();
             break;
           case 'park': {
-            const { parkX, parkY } = settingsStore.get().general;
-            await connection.park(parkX, parkY);
+            const defaults = settingsStore.get().general;
+            await connection.park(msg.parkX ?? defaults.parkX, msg.parkY ?? defaults.parkY);
             break;
           }
           case 'unlock':

@@ -9,6 +9,8 @@ interface Props {
   defaultFeed: number;
   /** Owned by the parent (not this panel) - the Console tab bar's Auto-scroll switch lives outside this component. */
   autoScroll: boolean;
+  /** Owned by the parent too, alongside autoScroll - toggled from the same tab bar. Swaps the log to a much taller height for easier debugging. */
+  expanded: boolean;
   send: (message: Record<string, unknown>) => void;
 }
 
@@ -18,7 +20,7 @@ interface Props {
 const FEED_MOVE = /G0*[123](?!\d)/i;
 const HAS_FEED_WORD = /F[-+]?[\d.]/i;
 
-export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, autoScroll, send }: Props) {
+export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, autoScroll, expanded, send }: Props) {
   const [command, setCommand] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +51,7 @@ export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, auto
 
   return (
     <div className="console">
-      <div className="log" ref={logRef}>
+      <div className={expanded ? 'log expanded' : 'log'} ref={logRef}>
         {log.map((entry) => (
           <div key={entry.id} className={`log-line log-${entry.kind}`}>
             {entry.text}
