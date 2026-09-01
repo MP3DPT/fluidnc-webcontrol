@@ -1685,12 +1685,6 @@ button.ghost:not(:disabled):hover {
   width: 100%;
 }
 
-/* ParkCluster - pinned to the row's right edge, opposite the compass/Z
-   strip which now hug the left margin (see .jog-control). */
-.jog-cluster > :last-child {
-  margin-left: auto;
-}
-
 /* Stacked (grid on top, Park button below spanning its width) rather than
    side-by-side, separated from the Z strip by its own vertical divider
    (see JogPanel) so it reads as a distinct control group. Grid cells match
