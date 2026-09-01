@@ -306,12 +306,21 @@ export class FluidNCConnection extends EventEmitter {
    * Where "the far end of X" or "the far end of Y" (see park() below)
    * actually is, in machine coordinates - derived from the controller's own
    * $23 (homing direction invert mask) and $130/$131 (max travel), never
-   * guessed. Per Grbl/FluidNC's documented $23 semantics: the *default*
-   * (bit clear) homing direction is negative, meaning the limit switch - and
-   * therefore machine position 0 - sits at that axis's negative extreme, so
-   * the rest of the travel envelope (the "far" end) is positive from there.
-   * An inverted bit (set) flips all of that: switch/zero at the positive
-   * extreme, far end is negative. Bit 0 = X, bit 1 = Y.
+   * guessed. Bit 0 = X, bit 1 = Y.
+   *
+   * The polarity here is the OPPOSITE of the classic Grbl wiki's stated
+   * $23 semantics ("default/clear = negative-seeking"), and that's
+   * deliberate, not a typo - the first version of this method followed that
+   * doc literally and got it backwards for real hardware. Confirmed twice
+   * on a real machine with $23=3 (X and Y bits both set): its own homing
+   * debug trace showed both axes' fast-approach seeking the *negative*
+   * limit ("Planned move to -479.600,-479.600,..."), and a park computed
+   * with the doc's polarity sent X to -436 - rejected by the controller's
+   * own soft limit (max travel $130=436), proving the valid range was
+   * actually [0, +436], not [-436, 0]. So: bit SET -> homing sought the
+   * negative limit -> switch/zero sits at that axis's negative extreme ->
+   * the rest of travel ("far") is positive from there. Bit CLEAR is the
+   * mirror image: positive-seeking, far end negative.
    *
    * This is only ever as trustworthy as the controller's own soft-limit
    * enforcement backstopping it (see hasSoftLimits below) - confirmed on
@@ -321,7 +330,7 @@ export class FluidNCConnection extends EventEmitter {
    * a manual jog-and-save teach step for every machine.
    */
   static farTarget(axisMaxTravel: number, dirInvertBit: boolean): number {
-    return dirInvertBit ? -axisMaxTravel : axisMaxTravel;
+    return dirInvertBit ? axisMaxTravel : -axisMaxTravel;
   }
 
   /** True only if $20 (soft limits) is actually enabled - the safety net every computed park/corner position leans on. */
