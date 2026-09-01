@@ -106,6 +106,43 @@ function renderPanelHtml() {
     flex-direction: column;
     gap: var(--space-1);
   }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font: 600 0.6875rem/1.2 var(--font-sans);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .field-row { display: flex; align-items: center; gap: var(--space-2); }
+  .field-row span:last-child {
+    font: 400 0.75rem/1.5 var(--font-sans);
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  input {
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    margin: 0;
+    height: 2rem;
+    width: 4.75rem;
+    font: 500 0.875rem/1.4 var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:hover { border-color: var(--text-muted); }
+  input:focus-visible {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
   .hint { color: var(--text-muted); font: 400 0.75rem/1.5 var(--font-sans); margin: 0; }
   .error-text { color: var(--danger); }
   button {
@@ -128,6 +165,23 @@ function renderPanelHtml() {
 </style>
 </head>
 <body>
+  <div class="row">
+    <label>Max travel
+      <span class="field-row"><input type="number" id="maxTravel" /><span>mm</span></span>
+    </label>
+    <label>Feed
+      <span class="field-row"><input type="number" id="feedrate" min="1" /><span>mm/min</span></span>
+    </label>
+  </div>
+  <div class="row">
+    <label>Probe thickness
+      <span class="field-row"><input type="number" id="plateThickness" step="0.01" /><span>mm</span></span>
+    </label>
+    <label>Retract distance
+      <span class="field-row"><input type="number" id="retractDistance" /><span>mm</span></span>
+    </label>
+  </div>
+  <p class="hint" id="zeroHint"></p>
   <button id="probeBtn" disabled>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
     <span id="btnLabel">Probe &amp; Zero Z</span>
@@ -136,10 +190,16 @@ function renderPanelHtml() {
 <script>
 (function () {
   var ORIGIN = window.location.origin;
+  var config = {};
   var connectionOpen = false;
   var requestCounter = 0;
   var pending = new Map();
 
+  var maxTravelEl = document.getElementById('maxTravel');
+  var feedrateEl = document.getElementById('feedrate');
+  var plateThicknessEl = document.getElementById('plateThickness');
+  var retractDistanceEl = document.getElementById('retractDistance');
+  var hintEl = document.getElementById('zeroHint');
   var buttonEl = document.getElementById('probeBtn');
   var btnLabelEl = document.getElementById('btnLabel');
   var resultEl = document.getElementById('result');
@@ -148,14 +208,19 @@ function renderPanelHtml() {
     parent.postMessage({ type: 'contentHeight', height: document.body.scrollHeight }, ORIGIN);
   }
 
-  // Just the button now - Max travel/Feed/Probe thickness/Retract distance
-  // used to be editable right here, duplicating the same fields already in
-  // Settings -> Plugins -> Z-Probe. probeAndZero (below) reads the current
-  // Settings-configured values itself when called with no params, so
-  // there's nothing left for this panel to own except triggering it.
   function render() {
+    if (document.activeElement !== maxTravelEl) maxTravelEl.value = config.maxTravel ?? -25;
+    if (document.activeElement !== feedrateEl) feedrateEl.value = config.feedrate ?? 100;
+    if (document.activeElement !== plateThicknessEl) plateThicknessEl.value = config.plateThickness ?? 0;
+    if (document.activeElement !== retractDistanceEl) retractDistanceEl.value = config.retractDistance ?? 5;
+    hintEl.textContent = 'Zeros ' + (config.plateThickness ?? 0) + 'mm below contact, retracts ' + (config.retractDistance ?? 5) + 'mm clear.';
     buttonEl.disabled = !connectionOpen;
     reportHeight();
+  }
+
+  function persist(patch) {
+    Object.assign(config, patch);
+    parent.postMessage({ type: 'updateSettings', settings: patch }, ORIGIN);
   }
 
   function invokeAction(actionId, params) {
@@ -185,6 +250,7 @@ function renderPanelHtml() {
     if (!msg || typeof msg !== 'object') return;
     if (msg.type === 'coreState') {
       connectionOpen = Boolean(msg.connectionOpen);
+      config = msg.config || {};
       render();
     } else if (msg.type === 'probeResult') {
       showResult(msg.data);
@@ -197,10 +263,20 @@ function renderPanelHtml() {
     }
   });
 
+  maxTravelEl.addEventListener('input', function (e) { persist({ maxTravel: Number(e.target.value) }); });
+  feedrateEl.addEventListener('input', function (e) { persist({ feedrate: Number(e.target.value) }); });
+  plateThicknessEl.addEventListener('input', function (e) { persist({ plateThickness: Number(e.target.value) }); render(); });
+  retractDistanceEl.addEventListener('input', function (e) { persist({ retractDistance: Number(e.target.value) }); render(); });
+
   buttonEl.addEventListener('click', function () {
     buttonEl.disabled = true;
     btnLabelEl.textContent = 'Probing…';
-    invokeAction('probeAndZero', {})
+    invokeAction('probeAndZero', {
+      distance: Number(maxTravelEl.value),
+      feedrate: Number(feedrateEl.value),
+      plateThickness: Number(plateThicknessEl.value),
+      retractDistance: Number(retractDistanceEl.value),
+    })
       .then(showResult)
       .catch(function (err) {
         resultEl.className = 'hint error-text';

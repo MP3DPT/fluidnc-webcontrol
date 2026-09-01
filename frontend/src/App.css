@@ -551,12 +551,7 @@ main {
   width: 100%;
   padding: var(--space-5);
   display: grid;
-  /* Right column is a bit wider than the left one - just enough for
-     ParkCluster (matching .jog-btn's own size, separated from the Z strip
-     by a vertical divider) to sit in the same row as the compass, with no
-     more slack than that needs (a wider jump than this left other cards
-     in the column, e.g. Z-Probe, with dead space they didn't need). */
-  grid-template-columns: 340px minmax(0, 1fr) 420px;
+  grid-template-columns: 340px minmax(0, 1fr) 360px;
   gap: var(--space-5);
 }
 
@@ -599,7 +594,7 @@ main {
 /* 1200-1599px: keep the full three-column layout, tighten proportions. */
 @media (max-width: 1599px) {
   main {
-    grid-template-columns: 300px minmax(0, 1fr) 380px;
+    grid-template-columns: 300px minmax(0, 1fr) 320px;
     gap: var(--space-4);
     padding: var(--space-4);
   }
@@ -980,15 +975,6 @@ main {
   background: var(--border-subtle);
   border: none;
   margin: 0;
-}
-
-/* Vertical variant - e.g. separating ParkCluster from the Z jog strip
-   (see JogPanel) so it reads as its own control group, not an extension
-   of the compass. */
-.divider-vertical {
-  width: 1px;
-  height: auto;
-  align-self: stretch;
 }
 
 /* ============================================================
@@ -1680,27 +1666,27 @@ button.ghost:not(:disabled):hover {
 .jog-cluster {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-3);
   align-items: center;
   width: 100%;
 }
 
 /* Stacked (grid on top, Park button below spanning its width) rather than
-   side-by-side, separated from the Z strip by its own vertical divider
-   (see JogPanel) so it reads as a distinct control group. Grid cells match
-   .jog-btn's own size - the column width (see main's grid-template-columns)
-   is sized just enough for this at full size, deliberately not wider. */
+   side-by-side - keeps this whole cluster narrow enough to sit in the same
+   row as the compass/Z strip without widening the column that holds it.
+   Sized down from .jog-btn's own size for the same reason: there just
+   isn't width to spare here. */
 .park-cluster {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-items: stretch;
 }
 
 .park-grid {
   display: grid;
-  grid-template-columns: repeat(2, 3.25rem);
-  grid-template-rows: repeat(2, 3.25rem);
+  grid-template-columns: repeat(2, 2rem);
+  grid-template-rows: repeat(2, 2rem);
   gap: var(--space-2);
 }
 
@@ -1730,11 +1716,11 @@ button.ghost:not(:disabled):hover {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: 0.2rem;
   width: 100%;
-  height: 2.25rem;
+  height: 1.75rem;
   padding: 0;
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   background: var(--surface-hover);
   color: var(--text-muted);
@@ -2518,16 +2504,6 @@ code {
   .jog-z-strip {
     grid-template-rows: repeat(3, 2.5rem);
     gap: var(--space-1);
-  }
-
-  .park-grid {
-    grid-template-columns: repeat(2, 2.5rem);
-    grid-template-rows: repeat(2, 2.5rem);
-    gap: var(--space-1);
-  }
-
-  .park-btn {
-    height: 1.875rem;
   }
 
   .jog-btn {

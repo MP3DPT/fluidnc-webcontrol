@@ -223,8 +223,6 @@ export function JogPanel({ disabled, parkReady, machineState, workPosition, sett
               </div>
             </div>
 
-            <Divider className="divider-vertical" />
-
             <ParkCluster
               disabled={disabled}
               parkReady={parkReady}
