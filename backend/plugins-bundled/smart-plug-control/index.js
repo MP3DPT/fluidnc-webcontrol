@@ -104,10 +104,12 @@ export function activate(ctx) {
   // Job-end automation: always turn off, regardless of *how* the job ended
   // (complete, stopped, or error) - the spindle should never be left
   // running just because the job didn't finish cleanly. Where the machine
-  // itself goes afterward (stay/return-to-origin/park) used to also live
-  // here (autoReturnToOrigin), but that's a core app setting now (Settings
-  // -> Job Completion) shared with the Actions panel's Park button, instead
-  // of one plugin's own separate toggle that could disagree with it.
+  // itself goes afterward used to also live here (autoReturnToOrigin), then
+  // briefly became a core "park on job complete" setting - removed
+  // entirely once the on-demand Park buttons (next to Jog Control) existed
+  // as a manual alternative; it could visibly fight a G-code file's own
+  // end-of-program move. The machine now just does whatever the file
+  // itself does at the end.
   const onProgramStatus = (state) => {
     const config = ctx.settings.get();
     const driver = createDriver(config);

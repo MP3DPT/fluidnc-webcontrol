@@ -17,15 +17,20 @@ export interface GeneralSettings {
   spoilboardWidth: number;
   spoilboardHeight: number;
   /**
-   * What happens once a job finishes cleanly (not on stop/error - same
-   * "only on a clean completion" caveat Smart Plug Control's own version of
-   * this used to have, before it got folded into this single core setting).
-   * 'park' additionally needs parkX/parkY set - see connection.ts's
-   * parkTarget() for how those two combine with the controller's own
-   * $23/$130/$131 to compute an actual machine coordinate.
+   * The preferred corner for the on-demand Park button/buttons (see
+   * ParkCluster, next to Jog Control) - not tied to any automatic
+   * post-job behavior. There used to be one: an automatic "park on job
+   * complete" action, removed once Park buttons existed as a manual
+   * alternative - it was redundant with (and could visibly fight) a
+   * G-code file's own end-of-program move, e.g. many CAM posts already
+   * emit their own "return to 0,0" right before M30. The machine now
+   * just does whatever the file itself does at the end; parking is
+   * purely something the user reaches for afterward if they want it.
+   * 'home' = the same side as the homing switch (machine coordinate 0 on
+   * that axis); 'far' = the opposite end of that axis's configured
+   * travel ($130/$131). Independent per axis so any of the 4 corners is
+   * reachable.
    */
-  jobCompletionAction: 'stay' | 'origin' | 'park';
-  /** 'home' = the same side as the homing switch (machine coordinate 0 on that axis); 'far' = the opposite end of that axis's configured travel ($130/$131). Independent per axis so any of the 4 corners is reachable. */
   parkX: 'home' | 'far';
   parkY: 'home' | 'far';
 }
@@ -45,7 +50,6 @@ const DEFAULT_SETTINGS: Settings = {
     jogStepSizes: [0.1, 1, 10, 50],
     spoilboardWidth: 0,
     spoilboardHeight: 0,
-    jobCompletionAction: 'stay',
     parkX: 'home',
     parkY: 'home',
   },

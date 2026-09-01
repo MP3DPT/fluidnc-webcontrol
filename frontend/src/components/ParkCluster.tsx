@@ -10,7 +10,7 @@ interface Props {
   parkReady: boolean;
   /** Current controller state, or null before any status report has arrived. Park is a G53 machine-coordinate move - it needs a real machine position, which only exists once $H has actually run (an un-homed machine that requires homing sits in Alarm until then, same as after any other alarm/fault). */
   machineState: MachineState | null;
-  /** The corner Settings -> Job Completion currently has saved - what the big Park button targets, and also what a finished job auto-parks to when that's the configured action. */
+  /** The corner Settings -> Park Corner currently has saved - what the wide Park button targets. */
   defaultParkX: Side;
   defaultParkY: Side;
   send: (message: Record<string, unknown>) => void;
@@ -18,15 +18,16 @@ interface Props {
 
 /**
  * Lives right next to Jog Control (see JogPanel) rather than a generic
- * Actions button - the real motivation (see Settings -> Job Completion's
- * own comment) is clearing the spindle out of the way to place material,
- * the same moment someone's reaching for the jog buttons anyway.
+ * Actions button - the real motivation (see Settings -> Park Corner's own
+ * comment) is clearing the spindle out of the way to place material, the
+ * same moment someone's reaching for the jog buttons anyway. Deliberately
+ * NOT tied to any automatic "on job complete" behavior (there used to be
+ * one - removed, see backend/src/settings/store.ts) - purely on-demand.
  *
  * The four corner buttons park to that specific corner immediately,
  * independent of whatever's saved in Settings - "any corner, right now".
- * The single Park button on the right instead targets the Settings ->
- * Job Completion default, so it always matches what a finished job would
- * auto-park to.
+ * The wide Park button below instead targets the Settings -> Park Corner
+ * preference, for whichever corner is used most often.
  */
 export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, defaultParkY, send }: Props) {
   // Left clickable (not disabled) rather than gated purely by state, since
@@ -49,7 +50,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
     ? 'Connect first'
     : parkReady
       ? undefined
-      : 'Needs soft limits enabled and max travel configured - see Settings → Job Completion';
+      : 'Needs soft limits enabled and max travel configured - see Settings → Park Corner';
 
   return (
     <div>
@@ -92,7 +93,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
         <button
           className="park-btn"
           disabled={parkDisabled}
-          title={title ?? 'Rapids to the corner set in Settings → Job Completion'}
+          title={title ?? 'Rapids to the corner set in Settings → Park Corner'}
           onClick={() => parkTo(defaultParkX, defaultParkY)}
         >
           <MapPin size={16} />

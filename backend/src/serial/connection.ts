@@ -363,10 +363,4 @@ export class FluidNCConnection extends EventEmitter {
     await this.sendLine('G90');
     await this.sendLine(`G53 G0 X${targetX.toFixed(3)} Y${targetY.toFixed(3)}`);
   }
-
-  /** Work-coordinate X0 Y0 - identical to what smart-plug-control's own "return to origin on completion" used to send, before that setting was folded into this core one. */
-  async returnToWorkOrigin(): Promise<void> {
-    await this.sendLine('G90');
-    await this.sendLine('G0 X0 Y0');
-  }
 }

@@ -151,27 +151,15 @@ export async function attachWebSocketServer(
   runner.on('programStatus', forward('programStatus'));
   runner.on('programError', forward('programError'));
 
-  // Core "what happens when a job finishes" behavior - Settings ->
-  // jobCompletionAction. Deliberately only on a clean 'complete', same
-  // reasoning smart-plug-control's own now-removed return-to-origin toggle
-  // used: after a stop/error the position isn't necessarily trustworthy, so
-  // auto-driving further moves could compound whatever went wrong. This
-  // used to be that plugin's own setting; folded into one core setting so
-  // "where does the machine go after a job" has a single source of truth
-  // instead of two settings that could disagree.
-  runner.on('programStatus', (state: { state: string }) => {
-    if (state.state !== 'complete') return;
-    const { jobCompletionAction, parkX, parkY } = settingsStore.get().general;
-    (async () => {
-      if (jobCompletionAction === 'origin') {
-        await connection.returnToWorkOrigin();
-      } else if (jobCompletionAction === 'park') {
-        await connection.park(parkX, parkY);
-      }
-    })().catch((err) => {
-      broadcast(wss, { type: 'error', data: `Post-job move failed: ${err instanceof Error ? err.message : String(err)}` });
-    });
-  });
+  // There used to be an automatic "what happens when a job finishes"
+  // action here (Settings -> jobCompletionAction: stay/origin/park),
+  // removed once the on-demand Park buttons (see ParkCluster) existed as
+  // a manual alternative - confirmed on real hardware that it could
+  // visibly fight a G-code file's own end-of-program move (many CAM
+  // posts already emit their own "return to 0,0" right before M30, so
+  // the machine would go there, then immediately get yanked to a park
+  // corner). The machine now just does whatever the file itself does at
+  // the end; parking is purely something the user reaches for afterward.
 
   // Broadcast (not just reply-to-sender) so every open browser stays in
   // sync when settings change from any one of them.
