@@ -92,6 +92,11 @@ export interface GeneralSettings {
   /** Working area size in mm from machine (0,0); 0 = not configured, skip that axis's "job is bigger than the working area" check. See App.tsx's applyLoadedFile. */
   spoilboardWidth: number;
   spoilboardHeight: number;
+  /** What happens once a job finishes cleanly - see backend/src/settings/store.ts for the full reasoning (folds in what used to be smart-plug-control's own return-to-origin toggle). */
+  jobCompletionAction: 'stay' | 'origin' | 'park';
+  /** 'home' = same side as that axis's homing switch (machine 0); 'far' = the opposite end of its configured travel. Only meaningful when jobCompletionAction is 'park', but also used by the standalone Park button in the Actions panel. */
+  parkX: 'home' | 'far';
+  parkY: 'home' | 'far';
 }
 
 /** A plugin's own flat settings bag - always has at least "enabled". */

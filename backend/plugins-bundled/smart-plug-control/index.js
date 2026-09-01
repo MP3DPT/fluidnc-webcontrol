@@ -101,29 +101,19 @@ export function activate(ctx) {
     await new Promise((resolve) => setTimeout(resolve, spinUpSeconds * 1000));
   });
 
-  // Job-end automation:
-  //  - always turn off, regardless of *how* the job ended (complete,
-  //    stopped, or error) - the spindle should never be left running just
-  //    because the job didn't finish cleanly.
-  //  - only on a *clean* completion, optionally return to work X0 Y0. Not
-  //    on stop/error - after an abnormal end the position isn't
-  //    necessarily trustworthy, so auto-driving further moves could
-  //    compound a problem (same reasoning as not auto-retracting on
-  //    emergency stop). There's deliberately no automatic Z-retract here -
-  //    a file's own end routine usually already retracts, and an
-  //    additional automatic lift risks pushing past the machine's real Z
-  //    travel (a "Soft limit" alarm right after an otherwise-successful
-  //    job - this happened in testing before it was removed).
+  // Job-end automation: always turn off, regardless of *how* the job ended
+  // (complete, stopped, or error) - the spindle should never be left
+  // running just because the job didn't finish cleanly. Where the machine
+  // itself goes afterward (stay/return-to-origin/park) used to also live
+  // here (autoReturnToOrigin), but that's a core app setting now (Settings
+  // -> Job Completion) shared with the Actions panel's Park button, instead
+  // of one plugin's own separate toggle that could disagree with it.
   const onProgramStatus = (state) => {
     const config = ctx.settings.get();
     const driver = createDriver(config);
     if (!driver) return;
 
     (async () => {
-      if (state.state === 'complete' && config.autoReturnToOrigin) {
-        await ctx.connection.sendLine('G90');
-        await ctx.connection.sendLine('G0 X0 Y0');
-      }
       if ((state.state === 'complete' || state.state === 'stopped' || state.state === 'error') && config.autoStop) {
         await driver.turnOff();
       }

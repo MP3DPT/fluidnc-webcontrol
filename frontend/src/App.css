@@ -2041,6 +2041,68 @@ button.ghost:not(:disabled):hover {
   color: var(--warning);
 }
 
+/* ============================================================
+   Reusable inline warning banner (same look as the update modal's
+   "blocked" state) and the Park corner picker
+   ============================================================ */
+.inline-warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--warning);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.8125rem;
+}
+
+.corner-picker {
+  display: grid;
+  grid-template-columns: repeat(2, 2rem);
+  grid-template-rows: repeat(2, 2rem);
+  gap: var(--space-2);
+}
+
+.corner-dot {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.corner-dot:hover {
+  border-color: var(--text-secondary);
+}
+
+.corner-dot.active {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.corner-dot-home {
+  position: relative;
+}
+
+.corner-dot-home::after {
+  content: 'H';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.corner-dot.active.corner-dot-home::after {
+  color: #fff;
+}
+
 .app.drag-active {
   outline: 2px dashed var(--primary);
   outline-offset: -2px;

@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, Upload } from 'lucide-react';
+import { Download, TriangleAlert, Upload } from 'lucide-react';
 import type { Settings } from '../types';
 import { Switch } from './ui/Switch';
 import { downloadJson, timestampForFilename } from '../download';
+import { CornerPicker } from './CornerPicker';
 
 interface Props {
   settings: Settings | null;
   send: (message: Record<string, unknown>) => void;
+  connectionOpen: boolean;
+  /** The full raw $$ dump - null until connected and it's actually been fetched. Used to check Park's real prerequisites ($20 soft limits, $130/$131 max travel) rather than just assuming they're set. */
+  fluidncSettings: Record<string, number> | null;
 }
 
 const FALLBACK_GENERAL: Settings['general'] = {
@@ -15,6 +19,9 @@ const FALLBACK_GENERAL: Settings['general'] = {
   jogStepSizes: [0.1, 1, 10, 50],
   spoilboardWidth: 0,
   spoilboardHeight: 0,
+  jobCompletionAction: 'stay',
+  parkX: 'home',
+  parkY: 'home',
 };
 
 /** Parses "0.1, 1, 10, 50" into [0.1, 1, 10, 50] - drops anything non-numeric or <= 0, dedupes, sorts ascending. Returns null if nothing valid survives (caller should reject rather than persist an empty Step dropdown). */
@@ -28,13 +35,16 @@ function parseStepSizes(text: string): number[] | null {
 }
 
 /** App-level configuration - this web UI's own behavior, not any one machine or plugin. */
-export function AppSettingsPanel({ settings, send }: Props) {
+export function AppSettingsPanel({ settings, send, connectionOpen, fluidncSettings }: Props) {
   const [consoleAutoFeedEnabled, setConsoleAutoFeedEnabled] = useState(FALLBACK_GENERAL.consoleAutoFeedEnabled);
   const [consoleDefaultFeed, setConsoleDefaultFeed] = useState(FALLBACK_GENERAL.consoleDefaultFeed);
   const [jogStepSizesText, setJogStepSizesText] = useState(FALLBACK_GENERAL.jogStepSizes.join(', '));
   const [jogStepSizesError, setJogStepSizesError] = useState(false);
   const [spoilboardWidth, setSpoilboardWidth] = useState(FALLBACK_GENERAL.spoilboardWidth);
   const [spoilboardHeight, setSpoilboardHeight] = useState(FALLBACK_GENERAL.spoilboardHeight);
+  const [jobCompletionAction, setJobCompletionAction] = useState(FALLBACK_GENERAL.jobCompletionAction);
+  const [parkX, setParkX] = useState(FALLBACK_GENERAL.parkX);
+  const [parkY, setParkY] = useState(FALLBACK_GENERAL.parkY);
   const [restoreMessage, setRestoreMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const generalInitialized = useRef(false);
   const restoreFileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +60,9 @@ export function AppSettingsPanel({ settings, send }: Props) {
       setJogStepSizesText(settings.general.jogStepSizes.join(', '));
       setSpoilboardWidth(settings.general.spoilboardWidth ?? FALLBACK_GENERAL.spoilboardWidth);
       setSpoilboardHeight(settings.general.spoilboardHeight ?? FALLBACK_GENERAL.spoilboardHeight);
+      setJobCompletionAction(settings.general.jobCompletionAction ?? FALLBACK_GENERAL.jobCompletionAction);
+      setParkX(settings.general.parkX ?? FALLBACK_GENERAL.parkX);
+      setParkY(settings.general.parkY ?? FALLBACK_GENERAL.parkY);
     }
   }, [settings]);
 
@@ -119,6 +132,9 @@ export function AppSettingsPanel({ settings, send }: Props) {
         setJogStepSizesText((parsed.general.jogStepSizes ?? FALLBACK_GENERAL.jogStepSizes).join(', '));
         setSpoilboardWidth(parsed.general.spoilboardWidth ?? FALLBACK_GENERAL.spoilboardWidth);
         setSpoilboardHeight(parsed.general.spoilboardHeight ?? FALLBACK_GENERAL.spoilboardHeight);
+        setJobCompletionAction(parsed.general.jobCompletionAction ?? FALLBACK_GENERAL.jobCompletionAction);
+        setParkX(parsed.general.parkX ?? FALLBACK_GENERAL.parkX);
+        setParkY(parsed.general.parkY ?? FALLBACK_GENERAL.parkY);
       }
       setRestoreMessage({ text: 'Backup restored.', isError: false });
     };
@@ -230,6 +246,75 @@ export function AppSettingsPanel({ settings, send }: Props) {
             <span>mm</span>
           </span>
         </label>
+      </div>
+
+      <div className="settings-section">
+        <h4>Job Completion</h4>
+        <p className="hint">
+          What the machine does once a job finishes cleanly - not on a manual stop or an error, since the position
+          isn't necessarily trustworthy then. "Park at a corner" and the Actions panel's Park button both use the
+          same corner below.
+        </p>
+        <label>
+          When a job finishes
+          <select
+            value={jobCompletionAction}
+            onChange={(e) => {
+              const v = e.target.value as Settings['general']['jobCompletionAction'];
+              setJobCompletionAction(v);
+              persistGeneral({ jobCompletionAction: v });
+            }}
+          >
+            <option value="stay">Stay where it ends</option>
+            <option value="origin">Return to work 0,0</option>
+            <option value="park">Park at a corner</option>
+          </select>
+        </label>
+
+        {jobCompletionAction === 'park' && (
+          <>
+            {!connectionOpen && (
+              <p className="hint">Connect to the controller to check whether Park's prerequisites are met.</p>
+            )}
+            {connectionOpen && fluidncSettings === null && <p className="hint">Reading controller settings…</p>}
+            {connectionOpen && fluidncSettings !== null && fluidncSettings['$20'] !== 1 && (
+              <div className="inline-warning">
+                <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <TriangleAlert size={14} />
+                  Soft limits ($20) aren't enabled on the controller - Park relies on them to refuse an
+                  out-of-range move instead of actually crashing into a limit switch.
+                </p>
+                <div className="row">
+                  <button
+                    onClick={() => {
+                      send({ type: 'gcode', line: '$20=1' });
+                      setTimeout(() => send({ type: 'getFirmwareSettings' }), 500);
+                    }}
+                  >
+                    Enable soft limits ($20=1)
+                  </button>
+                </div>
+              </div>
+            )}
+            {connectionOpen &&
+              fluidncSettings !== null &&
+              fluidncSettings['$20'] === 1 &&
+              (!fluidncSettings['$130'] || !fluidncSettings['$131']) && (
+                <p className="hint error-text">
+                  Max travel ($130/$131) isn't configured on the controller - set those in your FluidNC config
+                  before Park can compute a corner.
+                </p>
+              )}
+
+            <label>Park corner</label>
+            <CornerPicker x={parkX} y={parkY} onChange={(x, y) => {
+              setParkX(x);
+              setParkY(y);
+              persistGeneral({ parkX: x, parkY: y });
+            }} />
+            <p className="hint">The dot marked "H" is machine home (0,0) - the other three are the far end of X and/or Y's configured travel.</p>
+          </>
+        )}
       </div>
 
       <div className="settings-section">

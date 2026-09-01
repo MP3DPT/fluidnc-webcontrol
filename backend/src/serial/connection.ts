@@ -301,4 +301,63 @@ export class FluidNCConnection extends EventEmitter {
       .then(() => collected)
       .finally(() => this.off('message', onMessage));
   }
+
+  /**
+   * Where "the far end of X" or "the far end of Y" (see park() below)
+   * actually is, in machine coordinates - derived from the controller's own
+   * $23 (homing direction invert mask) and $130/$131 (max travel), never
+   * guessed. Per Grbl/FluidNC's documented $23 semantics: the *default*
+   * (bit clear) homing direction is negative, meaning the limit switch - and
+   * therefore machine position 0 - sits at that axis's negative extreme, so
+   * the rest of the travel envelope (the "far" end) is positive from there.
+   * An inverted bit (set) flips all of that: switch/zero at the positive
+   * extreme, far end is negative. Bit 0 = X, bit 1 = Y.
+   *
+   * This is only ever as trustworthy as the controller's own soft-limit
+   * enforcement backstopping it (see hasSoftLimits below) - confirmed on
+   * real hardware that an out-of-range G53 move is rejected outright
+   * (ALARM:2, zero motion) rather than actually crashing, which is what
+   * makes computing this from config safe to rely on instead of requiring
+   * a manual jog-and-save teach step for every machine.
+   */
+  static farTarget(axisMaxTravel: number, dirInvertBit: boolean): number {
+    return dirInvertBit ? -axisMaxTravel : axisMaxTravel;
+  }
+
+  /** True only if $20 (soft limits) is actually enabled - the safety net every computed park/corner position leans on. */
+  static hasSoftLimits(fluidncSettings: Record<string, number>): boolean {
+    return fluidncSettings['$20'] === 1;
+  }
+
+  /**
+   * Rapids to a computed corner in machine coordinates - 'home' on an axis
+   * means "same side as that axis's homing switch" (machine 0), 'far' means
+   * the opposite end of its configured travel (see farTarget above).
+   * Deliberately XY-only, no Z move: an automatic Z lift here caused a real
+   * soft-limit alarm in testing once before (see smart-plug-control's own
+   * return-to-origin code, which has the same deliberate omission and the
+   * same reasoning) - a job's own end-of-file routine already retracts.
+   */
+  async park(parkX: 'home' | 'far', parkY: 'home' | 'far'): Promise<void> {
+    const settings = await this.getSettings();
+    if (!FluidNCConnection.hasSoftLimits(settings)) {
+      throw new Error('Soft limits ($20) are not enabled on the controller - enable them before using Park.');
+    }
+    const maxX = settings['$130'];
+    const maxY = settings['$131'];
+    if (maxX === undefined || maxY === undefined) {
+      throw new Error('Max travel ($130/$131) is not configured on the controller.');
+    }
+    const dirMask = settings['$23'] ?? 0;
+    const targetX = parkX === 'far' ? FluidNCConnection.farTarget(maxX, (dirMask & 1) !== 0) : 0;
+    const targetY = parkY === 'far' ? FluidNCConnection.farTarget(maxY, (dirMask & 2) !== 0) : 0;
+    await this.sendLine('G90');
+    await this.sendLine(`G53 G0 X${targetX.toFixed(3)} Y${targetY.toFixed(3)}`);
+  }
+
+  /** Work-coordinate X0 Y0 - identical to what smart-plug-control's own "return to origin on completion" used to send, before that setting was folded into this core one. */
+  async returnToWorkOrigin(): Promise<void> {
+    await this.sendLine('G90');
+    await this.sendLine('G0 X0 Y0');
+  }
 }

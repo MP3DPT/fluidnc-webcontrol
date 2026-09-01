@@ -52,6 +52,7 @@ export default function App() {
     programStatus,
     settings,
     machineRates,
+    fluidncSettings,
     plugins,
     backendLog,
     updateStatus,
@@ -59,6 +60,10 @@ export default function App() {
     invokePluginAction,
   } = useSocket();
   const controlsDisabled = !connectionOpen;
+  // Park additionally needs soft limits enabled and max travel configured -
+  // see connection.ts's park() for why (both are what stop a miscalculated
+  // corner from being a real crash risk instead of just a refused move).
+  const parkReady = fluidncSettings !== null && fluidncSettings['$20'] === 1 && !!fluidncSettings['$130'] && !!fluidncSettings['$131'];
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const programRunning = programStatus.state === 'running';
   const latestAppVersion = useLatestAppVersion();
@@ -238,7 +243,7 @@ export default function App() {
       </Drawer>
 
       <Drawer open={activePanel === 'settings'} title="Settings" onClose={() => setActivePanel(null)}>
-        <AppSettingsPanel settings={settings} send={send} />
+        <AppSettingsPanel settings={settings} send={send} connectionOpen={connectionOpen} fluidncSettings={fluidncSettings} />
       </Drawer>
 
       <Drawer open={activePanel === 'about'} title="About" onClose={() => setActivePanel(null)}>
@@ -318,7 +323,7 @@ export default function App() {
         <div className="column">
           <ConnectPanel ports={ports} connectionOpen={connectionOpen} wsReady={wsReady} send={send} />
           <StatusPanel status={status} />
-          <ActionsPanel disabled={controlsDisabled} estopActive={connectionOpen} send={send} />
+          <ActionsPanel disabled={controlsDisabled} parkReady={parkReady} estopActive={connectionOpen} send={send} />
           <PluginPanels
             plugins={plugins}
             column="left"

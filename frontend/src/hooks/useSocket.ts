@@ -29,6 +29,12 @@ export function useSocket() {
   const [programStatus, setProgramStatus] = useState<ProgramStatus>({ state: 'idle', sent: 0, total: 0 });
   const [settings, setSettings] = useState<Settings | null>(null);
   const [machineRates, setMachineRates] = useState<MachineRates | null>(null);
+  // The full raw $$ dump (every "$N" key, e.g. $20 soft limits, $23 homing
+  // direction, $130/$131 max travel) - kept alongside the narrower
+  // machineRates extraction above rather than replacing it, since existing
+  // code already depends on that shape. Used by the Job Completion settings
+  // section to show whether Park's prerequisites are actually met.
+  const [fluidncSettings, setFluidncSettings] = useState<Record<string, number> | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [backendLog, setBackendLog] = useState<BackendLogEntry[]>([]);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ status: 'idle' });
@@ -176,6 +182,7 @@ export function useSocket() {
             if (raw['$110'] !== undefined && raw['$111'] !== undefined && raw['$112'] !== undefined) {
               setMachineRates({ x: raw['$110'], y: raw['$111'], z: raw['$112'] });
             }
+            setFluidncSettings(raw);
             break;
           }
           case 'commandError':
@@ -227,6 +234,7 @@ export function useSocket() {
     programStatus,
     settings,
     machineRates,
+    fluidncSettings,
     plugins,
     backendLog,
     updateStatus,

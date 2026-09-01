@@ -39,7 +39,8 @@ type ClientMessage =
   | { type: 'clearProgram' }
   | { type: 'systemReboot' }
   | { type: 'systemShutdown' }
-  | { type: 'getFirmwareSettings' };
+  | { type: 'getFirmwareSettings' }
+  | { type: 'park' };
 
 function broadcast(wss: WebSocketServer, message: unknown) {
   const payload = JSON.stringify(message);
@@ -139,6 +140,28 @@ export async function attachWebSocketServer(
   runner.on('programStatus', forward('programStatus'));
   runner.on('programError', forward('programError'));
 
+  // Core "what happens when a job finishes" behavior - Settings ->
+  // jobCompletionAction. Deliberately only on a clean 'complete', same
+  // reasoning smart-plug-control's own now-removed return-to-origin toggle
+  // used: after a stop/error the position isn't necessarily trustworthy, so
+  // auto-driving further moves could compound whatever went wrong. This
+  // used to be that plugin's own setting; folded into one core setting so
+  // "where does the machine go after a job" has a single source of truth
+  // instead of two settings that could disagree.
+  runner.on('programStatus', (state: { state: string }) => {
+    if (state.state !== 'complete') return;
+    const { jobCompletionAction, parkX, parkY } = settingsStore.get().general;
+    (async () => {
+      if (jobCompletionAction === 'origin') {
+        await connection.returnToWorkOrigin();
+      } else if (jobCompletionAction === 'park') {
+        await connection.park(parkX, parkY);
+      }
+    })().catch((err) => {
+      broadcast(wss, { type: 'error', data: `Post-job move failed: ${err instanceof Error ? err.message : String(err)}` });
+    });
+  });
+
   // Broadcast (not just reply-to-sender) so every open browser stays in
   // sync when settings change from any one of them.
   settingsStore.on('change', forward('settings'));
@@ -184,6 +207,11 @@ export async function attachWebSocketServer(
           case 'home':
             await connection.home();
             break;
+          case 'park': {
+            const { parkX, parkY } = settingsStore.get().general;
+            await connection.park(parkX, parkY);
+            break;
+          }
           case 'unlock':
             await connection.unlock();
             break;

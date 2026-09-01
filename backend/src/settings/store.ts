@@ -16,6 +16,18 @@ export interface GeneralSettings {
    * a just-in-case safety net, not a required setup step. */
   spoilboardWidth: number;
   spoilboardHeight: number;
+  /**
+   * What happens once a job finishes cleanly (not on stop/error - same
+   * "only on a clean completion" caveat Smart Plug Control's own version of
+   * this used to have, before it got folded into this single core setting).
+   * 'park' additionally needs parkX/parkY set - see connection.ts's
+   * parkTarget() for how those two combine with the controller's own
+   * $23/$130/$131 to compute an actual machine coordinate.
+   */
+  jobCompletionAction: 'stay' | 'origin' | 'park';
+  /** 'home' = the same side as the homing switch (machine coordinate 0 on that axis); 'far' = the opposite end of that axis's configured travel ($130/$131). Independent per axis so any of the 4 corners is reachable. */
+  parkX: 'home' | 'far';
+  parkY: 'home' | 'far';
 }
 
 /** Each plugin's own flat settings bag - always has at least "enabled". */
@@ -33,6 +45,9 @@ const DEFAULT_SETTINGS: Settings = {
     jogStepSizes: [0.1, 1, 10, 50],
     spoilboardWidth: 0,
     spoilboardHeight: 0,
+    jobCompletionAction: 'stay',
+    parkX: 'home',
+    parkY: 'home',
   },
   plugins: {},
 };
