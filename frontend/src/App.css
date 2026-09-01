@@ -1680,16 +1680,21 @@ button.ghost:not(:disabled):hover {
   margin-left: auto;
 }
 
+/* Stacked (grid on top, Park button below spanning its width) rather than
+   side-by-side - there's real free space around this cluster (see JogPanel),
+   and the grid cells match .jog-btn's own size so the whole Park block reads
+   as part of the same control cluster, not a cramped afterthought. */
 .park-cluster {
   display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-  align-items: center;
+  align-items: stretch;
 }
 
 .park-grid {
   display: grid;
-  grid-template-columns: repeat(2, 2.5rem);
-  grid-template-rows: repeat(2, 2.5rem);
+  grid-template-columns: repeat(2, 3.25rem);
+  grid-template-rows: repeat(2, 3.25rem);
   gap: var(--space-2);
 }
 
@@ -1716,14 +1721,14 @@ button.ghost:not(:disabled):hover {
 
 .park-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  width: 3.25rem;
-  height: calc(2 * 2.5rem + var(--space-2));
+  gap: var(--space-2);
+  width: 100%;
+  height: 2.25rem;
   padding: 0;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   background: var(--surface-hover);
   color: var(--text-muted);
@@ -2153,14 +2158,14 @@ button.ghost:not(:disabled):hover {
 
 .corner-picker {
   display: grid;
-  grid-template-columns: repeat(2, 3.5rem);
-  grid-template-rows: repeat(2, 3.5rem);
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, 2rem);
+  grid-template-rows: repeat(2, 2rem);
+  gap: var(--space-2);
 }
 
 .corner-dot {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2188,7 +2193,7 @@ button.ghost:not(:disabled):hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9375rem;
+  font-size: 0.625rem;
   font-weight: 700;
   color: var(--text-muted);
 }

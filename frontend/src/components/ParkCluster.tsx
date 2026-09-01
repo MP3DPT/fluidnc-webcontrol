@@ -62,7 +62,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: home X, far Y'}
             onClick={() => parkTo('home', 'far')}
           >
-            <CornerBracket corner="top-left" />
+            <CornerBracket corner="top-left" size={20} />
           </button>
           <button
             className="park-corner-btn"
@@ -70,7 +70,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: far X, far Y'}
             onClick={() => parkTo('far', 'far')}
           >
-            <CornerBracket corner="top-right" />
+            <CornerBracket corner="top-right" size={20} />
           </button>
           <button
             className="park-corner-btn"
@@ -78,7 +78,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: home X, home Y (machine 0,0)'}
             onClick={() => parkTo('home', 'home')}
           >
-            <CornerBracket corner="bottom-left" />
+            <CornerBracket corner="bottom-left" size={20} />
           </button>
           <button
             className="park-corner-btn"
@@ -86,7 +86,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: far X, home Y'}
             onClick={() => parkTo('far', 'home')}
           >
-            <CornerBracket corner="bottom-right" />
+            <CornerBracket corner="bottom-right" size={20} />
           </button>
         </div>
         <button
