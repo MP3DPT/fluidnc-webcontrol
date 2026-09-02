@@ -14,7 +14,7 @@ const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
 // Matches the frontend's own hardcoded version string (Sidebar/AboutPanel) -
 // this project doesn't read package.json for it anywhere, so staying
 // consistent with that rather than introducing a second source.
-const APP_VERSION = '0.4.7';
+const APP_VERSION = '0.4.8';
 
 async function main() {
   // Attached before anything else can log, so even an early startup error
