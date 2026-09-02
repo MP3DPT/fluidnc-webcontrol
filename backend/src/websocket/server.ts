@@ -144,6 +144,11 @@ export async function attachWebSocketServer(
   connection.on('welcome', forward('welcome'));
   connection.on('open', forward('connectionOpen'));
   connection.on('close', forward('connectionClosed'));
+  // Whether $H has actually completed successfully this connection - see
+  // connection.ts's own `homed` field for why this exists and isn't
+  // inferred from machine state. Drives the Home button's attention pulse
+  // and Park's guard on the frontend.
+  connection.on('homed', forward('homed'));
   connection.on('portError', (err: Error) => broadcast(wss, { type: 'portError', data: err.message }));
 
   runner.on('loaded', forward('programLoaded'));
@@ -169,6 +174,7 @@ export async function attachWebSocketServer(
 
   wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ type: 'connectionState', data: { isOpen: connection.isOpen } }));
+    ws.send(JSON.stringify({ type: 'homed', data: connection.isHomed }));
     ws.send(JSON.stringify({ type: 'programStatus', data: runner.getState() }));
     ws.send(JSON.stringify({ type: 'settings', data: settingsStore.get() }));
     ws.send(JSON.stringify({ type: 'plugins', data: pluginLoader.list() }));

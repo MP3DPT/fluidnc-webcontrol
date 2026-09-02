@@ -20,6 +20,12 @@ export function useSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const [wsReady, setWsReady] = useState(false);
   const [connectionOpen, setConnectionOpen] = useState(false);
+  // Whether $H has actually completed successfully this connection - the
+  // backend is the source of truth (see connection.ts's own `homed` field);
+  // this just mirrors its broadcasts. Resets to false on every disconnect,
+  // matching the backend's own "a fresh connection starts distrusted"
+  // stance - see App.tsx's Home-button pulse and ParkCluster's guard.
+  const [isHomed, setIsHomed] = useState(false);
   const [status, setStatus] = useState<StatusReport | null>(null);
   const [workPosition, setWorkPosition] = useState<Position | null>(null);
   const lastWcoRef = useRef<Position | null>(null);
@@ -110,6 +116,12 @@ export function useSocket() {
             setWorkPosition(null);
             lastWcoRef.current = null;
             appendLog('info', 'Serial port disconnected');
+            break;
+          // Whether $H has actually completed successfully this connection -
+          // see connection.ts's own `homed` field for the full reasoning.
+          // Drives the Home button's attention pulse and Park's guard.
+          case 'homed':
+            setIsHomed(Boolean(msg.data));
             break;
           case 'welcome':
             appendLog('welcome', msg.data as string);
@@ -239,6 +251,7 @@ export function useSocket() {
   return {
     wsReady,
     connectionOpen,
+    isHomed,
     status,
     workPosition,
     ports,

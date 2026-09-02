@@ -8,8 +8,21 @@ interface Props {
   disabled: boolean;
   /** Whether Park's real prerequisites (soft limits enabled, max travel configured - see connection.ts's park()) are actually met, not just whether the connection is open. */
   parkReady: boolean;
-  /** Current controller state, or null before any status report has arrived. Park is a G53 machine-coordinate move - it needs a real machine position, which only exists once $H has actually run (an un-homed machine that requires homing sits in Alarm until then, same as after any other alarm/fault). */
+  /** Current controller state, or null before any status report has arrived - used only to catch "currently moving", not homing (see isHomed below). */
   machineState: MachineState | null;
+  /**
+   * Whether $H has actually completed successfully this connection - the
+   * backend's own authoritative flag (see connection.ts's `homed` field),
+   * NOT inferred from machineState. That distinction is load-bearing: a
+   * real crash happened because a freshly power-cycled, never-homed
+   * controller reported Idle rather than some locked Alarm state, so a
+   * "machineState !== 'Idle'" guard let Park through with nothing
+   * trustworthy backing its soft-limit check. The backend now refuses to
+   * run park() at all without this too - this prop is what lets the
+   * buttons disable themselves proactively instead of only failing after
+   * a click.
+   */
+  isHomed: boolean;
   /** The corner Settings -> Park Corner currently has saved - what the wide Park button targets. */
   defaultParkX: Side;
   defaultParkY: Side;
@@ -29,28 +42,29 @@ interface Props {
  * The wide Park button below instead targets the Settings -> Park Corner
  * preference, for whichever corner is used most often.
  */
-export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, defaultParkY, send }: Props) {
-  // Left clickable (not disabled) rather than gated purely by state, since
-  // "why won't this button do anything" is worse UX than a click that
-  // explains itself - same reasoning ProgramPanel's Run uses a confirm()
-  // for its own "already finished" case instead of just disabling Run.
+export function ParkCluster({ disabled, parkReady, machineState, isHomed, defaultParkX, defaultParkY, send }: Props) {
+  // "Currently moving" stays a click-time alert (matching ProgramPanel's
+  // Run confirm() for its own "already finished" case) rather than a
+  // disabled state, since it's transient and self-resolving. "Not homed"
+  // is folded into parkDisabled below instead, proactively - a real crash
+  // happened with the softer click-and-explain approach for that one (see
+  // isHomed's own comment), so it's disabled outright now, not just
+  // discouraged.
   const parkTo = (x: Side, y: Side) => {
-    if (machineState !== 'Idle') {
-      window.alert(
-        machineState === 'Run' || machineState === 'Jog' || machineState === 'Hold'
-          ? "The machine is currently moving - wait for it to finish before parking."
-          : 'Home the machine first (the Home button) - Park moves to a machine-coordinate corner, which only exists once homing has run.',
-      );
+    if (machineState === 'Run' || machineState === 'Jog' || machineState === 'Hold') {
+      window.alert('The machine is currently moving - wait for it to finish before parking.');
       return;
     }
     send({ type: 'park', parkX: x, parkY: y });
   };
-  const parkDisabled = disabled || !parkReady;
+  const parkDisabled = disabled || !parkReady || !isHomed;
   const title = disabled
     ? 'Connect first'
-    : parkReady
-      ? undefined
-      : 'Needs soft limits enabled and max travel configured - see Settings → Park Corner';
+    : !isHomed
+      ? 'Home the machine first (the Home button) - Park needs a known machine position to compute a safe target.'
+      : parkReady
+        ? undefined
+        : 'Needs soft limits enabled and max travel configured - see Settings → Park Corner';
 
   return (
     <div>

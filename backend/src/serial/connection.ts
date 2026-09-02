@@ -46,6 +46,18 @@ export class FluidNCConnection extends EventEmitter {
   private queue: PendingCommand[] = [];
   private pending: PendingCommand | null = null;
   private receivedWelcome = false;
+  // Whether $H has actually completed successfully THIS connection - not
+  // inferred from machine state (an un-homed FluidNC controller can, and
+  // on real hardware does, report Idle on fresh power-up rather than some
+  // locked Alarm state, so "state !== Alarm" is not a safe stand-in for
+  // "has been homed"). Confirmed the hard way: Park sent a real machine
+  // crash on a controller that had just been power-cycled and never
+  // homed, because soft limits ($20) only protect against moves that are
+  // out of range *relative to the controller's own tracked position* -
+  // and an un-homed controller's tracked position has no relationship to
+  // the tool's real physical position, so the check that's supposed to
+  // catch an out-of-range move has nothing trustworthy to check against.
+  private homed = false;
 
   static async listPorts(): Promise<PortInfo[]> {
     const ports = await SerialPort.list();
@@ -60,6 +72,16 @@ export class FluidNCConnection extends EventEmitter {
     return this.port?.isOpen ?? false;
   }
 
+  get isHomed(): boolean {
+    return this.homed;
+  }
+
+  private setHomed(value: boolean) {
+    if (this.homed === value) return;
+    this.homed = value;
+    this.emit('homed', value);
+  }
+
   connect(path: string, baud: number = DEFAULT_BAUD): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.port) {
@@ -68,6 +90,12 @@ export class FluidNCConnection extends EventEmitter {
       }
 
       this.receivedWelcome = false;
+      // A fresh connection - whether to a controller that just power-cycled
+      // or one that's been running for days - starts distrusted either
+      // way. There's no reliable way to ask "were you already homed?", and
+      // guessing wrong in the unsafe direction is exactly what caused a
+      // real crash - see the `homed` field's own comment.
+      this.setHomed(false);
       const port = new SerialPort({ path, baudRate: baud, autoOpen: false });
 
       port.open((err) => {
@@ -111,6 +139,7 @@ export class FluidNCConnection extends EventEmitter {
     this.queue = [];
     this.pending?.reject(new Error('Connection closed'));
     this.pending = null;
+    this.setHomed(false);
     this.emit('close');
   }
 
@@ -135,6 +164,13 @@ export class FluidNCConnection extends EventEmitter {
 
     const alarmCode = parseAlarm(line);
     if (alarmCode !== null) {
+      // Conservative on purpose: a soft-limit alarm specifically never
+      // actually moved anything, so position tracking is technically still
+      // fine, but a hard-limit trip or an e-stop very much can leave it
+      // suspect - and there's no cheap way to tell those apart here, so
+      // ANY alarm re-locks Park behind another successful $H rather than
+      // risk trusting a position that might not be trustworthy anymore.
+      this.setHomed(false);
       this.emit('alarm', alarmCode);
       this.failPending(new Error(`ALARM:${alarmCode}`));
       return;
@@ -253,8 +289,13 @@ export class FluidNCConnection extends EventEmitter {
     return this.sendLine('$X');
   }
 
-  home(): Promise<void> {
-    return this.sendLine('$H');
+  async home(): Promise<void> {
+    await this.sendLine('$H');
+    // Only reachable once FluidNC has actually replied "ok" to $H, not
+    // just because the line was sent - a failed/alarmed homing cycle
+    // rejects via the alarm branch in handleLine instead, which never
+    // reaches here.
+    this.setHomed(true);
   }
 
   /**
@@ -322,12 +363,18 @@ export class FluidNCConnection extends EventEmitter {
    * the rest of travel ("far") is positive from there. Bit CLEAR is the
    * mirror image: positive-seeking, far end negative.
    *
-   * This is only ever as trustworthy as the controller's own soft-limit
-   * enforcement backstopping it (see hasSoftLimits below) - confirmed on
-   * real hardware that an out-of-range G53 move is rejected outright
-   * (ALARM:2, zero motion) rather than actually crashing, which is what
-   * makes computing this from config safe to rely on instead of requiring
-   * a manual jog-and-save teach step for every machine.
+   * This is only as trustworthy as the controller's own soft-limit
+   * enforcement backstopping it (see hasSoftLimits below) AND the
+   * controller's tracked position actually matching the tool's real
+   * physical position - confirmed on real hardware that an out-of-range
+   * G53 move against a *homed* controller is rejected outright (ALARM:2,
+   * zero motion). Confirmed the hard way, separately, that this
+   * protection does NOT hold for an un-homed controller: soft limits check
+   * a target against the controller's own tracked position, and an
+   * un-homed controller's tracked position has no relationship to where
+   * the tool actually is - the "out of range" check has nothing real to
+   * check against, so it can't catch what would be a real crash. See
+   * park() below, which now refuses to run at all unless `homed` is true.
    */
   static farTarget(axisMaxTravel: number, dirInvertBit: boolean): number {
     return dirInvertBit ? axisMaxTravel : -axisMaxTravel;
@@ -348,6 +395,14 @@ export class FluidNCConnection extends EventEmitter {
    * same reasoning) - a job's own end-of-file routine already retracts.
    */
   async park(parkX: 'home' | 'far', parkY: 'home' | 'far'): Promise<void> {
+    // The real, load-bearing check - see the `homed` field's own comment
+    // for why soft limits alone don't protect an un-homed machine. This is
+    // deliberately checked here, not just in the frontend, since a click-
+    // time UI guard is not a substitute for the backend refusing to send
+    // the move at all.
+    if (!this.homed) {
+      throw new Error('The machine has not been homed yet this session - run Home first, then try Park again.');
+    }
     const settings = await this.getSettings();
     if (!FluidNCConnection.hasSoftLimits(settings)) {
       throw new Error('Soft limits ($20) are not enabled on the controller - enable them before using Park.');

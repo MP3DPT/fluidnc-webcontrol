@@ -1173,6 +1173,25 @@ button.warning:not(:disabled):hover {
   filter: brightness(0.92);
 }
 
+/* Home button, while connected but not yet homed this session (see
+   ActionsPanel's needsHoming prop) - a soft, looping glow rather than a
+   color change, since Home isn't an error state, just something that
+   still needs doing before Park (or trusting soft limits generally) is
+   actually safe. */
+@keyframes attention-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--warning-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 5px var(--warning-soft);
+  }
+}
+
+button.attention-pulse {
+  border-color: var(--warning);
+  animation: attention-pulse 1.6s ease-in-out infinite;
+}
+
 button.ghost {
   background: transparent;
   border-color: transparent;

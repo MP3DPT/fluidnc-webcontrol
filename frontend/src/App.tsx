@@ -44,6 +44,7 @@ export default function App() {
   const {
     wsReady,
     connectionOpen,
+    isHomed,
     status,
     workPosition,
     ports,
@@ -336,7 +337,12 @@ export default function App() {
         <div className="column">
           <ConnectPanel ports={ports} connectionOpen={connectionOpen} wsReady={wsReady} send={send} />
           <StatusPanel status={status} />
-          <ActionsPanel disabled={controlsDisabled} estopActive={connectionOpen} send={send} />
+          <ActionsPanel
+            disabled={controlsDisabled}
+            estopActive={connectionOpen}
+            needsHoming={connectionOpen && !isHomed}
+            send={send}
+          />
           <PluginPanels
             plugins={plugins}
             column="left"
@@ -512,6 +518,7 @@ export default function App() {
             disabled={controlsDisabled}
             parkReady={parkReady}
             machineState={status?.state ?? null}
+            isHomed={isHomed}
             workPosition={workPosition}
             settings={settings}
             send={send}
