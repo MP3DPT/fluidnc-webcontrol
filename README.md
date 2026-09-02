@@ -10,13 +10,13 @@ This project is an independent community effort and is not affiliated with or en
 
 > **Before you start:** your controller must already be running FluidNC firmware with a working `config.yaml` for your machine. This is a web control interface for an *existing, already-configured* FluidNC setup — it does not flash firmware or write machine configuration for you. Haven't set that up yet? See [FluidNC's own documentation](http://wiki.fluidnc.com/en/home) first.
 
-| Main screen | File Manager | Plugins |
+| Main screen | File Manager | Tools |
 |---|---|---|
-| ![Main screen](docs/screenshots/main-screen.png) | ![File Manager](docs/screenshots/file-manager.png) | ![Plugins](docs/screenshots/plugins.png) |
+| ![Main screen](docs/screenshots/main-screen.png) | ![File Manager](docs/screenshots/file-manager.png) | ![Tools](docs/screenshots/tools.png) |
 
-| Settings | Logs |
-|---|---|
-| ![Settings](docs/screenshots/settings.png) | ![Logs](docs/screenshots/logs.png) |
+| Plugins | Settings | Logs |
+|---|---|---|
+| ![Plugins](docs/screenshots/plugins.png) | ![Settings](docs/screenshots/settings.png) | ![Logs](docs/screenshots/logs.png) |
 
 ## Demo
 
