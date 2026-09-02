@@ -20,9 +20,9 @@ This project is an independent community effort and is not affiliated with or en
 
 ## Demo
 
-![Demo: tour the sidebar, load a job, and run it on real FluidNC hardware](docs/screenshots/demo.gif)
+![Demo: tour the sidebar, generate a toolpath, preview a file, and run a job — all on real FluidNC hardware](docs/screenshots/demo.gif)
 
-A tour of the sidebar (Plugins, Settings, Logs, About), then loading a G-code file from the File Manager and streaming it start to finish on a real PiBot V4.96 PRO — live toolpath, live coordinates, live machine state throughout. Recorded as a bare-machine test run (no endmill installed, Smart Plug Control disabled so the spindle never powers on) rather than an actual cut.
+A tour of the sidebar (Tools, Plugins, Settings, Logs, About), generating a facing toolpath with the Surfacing/Facing tool, then in the File Manager hovering a file's thumbnail for a full-size toolpath preview and job info (size, time, feed, spindle, tool, line count) before loading and streaming it start to finish on a real PiBot V4.96 PRO — live toolpath, live coordinates, live machine state throughout. Recorded as a bare-machine test run (no endmill installed, Smart Plug Control disabled so the spindle never powers on) rather than an actual cut.
 
 ## Why this exists
 
