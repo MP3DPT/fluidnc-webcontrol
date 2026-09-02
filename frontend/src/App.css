@@ -1677,19 +1677,20 @@ button.ghost:not(:disabled):hover {
 /* Stacked (grid on top, Park button below spanning its width) rather than
    side-by-side - keeps this whole cluster narrow enough to sit in the same
    row as the compass/Z strip without widening the column that holds it.
-   Sized down from .jog-btn's own size for the same reason: there just
-   isn't width to spare here. */
+   Sized as large as that row's real remaining width allows (confirmed by
+   direct measurement: ~35px free after the compass+Z strip at the locked
+   column width) - short of .jog-btn's own 3.25rem, but as close as fits. */
 .park-cluster {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   align-items: stretch;
 }
 
 .park-grid {
   display: grid;
-  grid-template-columns: repeat(2, 2rem);
-  grid-template-rows: repeat(2, 2rem);
+  grid-template-columns: repeat(2, 3rem);
+  grid-template-rows: repeat(2, 3rem);
   gap: var(--space-2);
 }
 
@@ -1719,11 +1720,11 @@ button.ghost:not(:disabled):hover {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
+  gap: 0.35rem;
   width: 100%;
-  height: 1.75rem;
+  height: 2rem;
   padding: 0;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   background: var(--surface-hover);
   color: var(--text-muted);
