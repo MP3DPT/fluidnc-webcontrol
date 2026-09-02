@@ -11,3 +11,9 @@ traffic-log.local.md
 # only ever created at runtime on a deployed Pi, inside the live install
 # dir, but ignored defensively in case it's ever exercised locally too.
 .update/
+
+# Scratch output from scripts/building-the-image.md's dd/pishrink/xz steps -
+# multi-gigabyte binaries that get uploaded straight to a GitHub Release
+# asset, never committed (see docs/building-the-image.md's own note on why:
+# the repo isn't meant to carry that kind of binary).
+image-build-out/
