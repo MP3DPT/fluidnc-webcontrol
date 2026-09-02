@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowUpCircle, Settings, Trash2, X } from 'lucide-react';
+import { ArrowUpCircle, Settings, Trash2, Wrench, X } from 'lucide-react';
 import { Switch } from './ui/Switch';
 import type { PluginInfo, SchemaField } from '../types';
 
@@ -162,7 +162,15 @@ export function PluginCard({ plugin, send, onUninstall, latestVersion, onUpdate,
   return (
     <div className="plugin-card">
       <div className="plugin-card-title-row">
-        <strong>{manifest.name}</strong>
+        <span className="plugin-card-title-group">
+          <strong>{manifest.name}</strong>
+          {manifest.tool && (
+            <span className="plugin-card-tool-tag">
+              <Wrench size={11} />
+              Tool - open from Tools
+            </span>
+          )}
+        </span>
         <div className="plugin-card-actions">
           {latestVersion && (
             <button onClick={onUpdate} disabled={updating} title={`Update to v${latestVersion}`}>

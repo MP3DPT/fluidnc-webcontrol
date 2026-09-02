@@ -14,7 +14,8 @@ import {
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { CoordinateDisplay } from './ui/CoordinateDisplay';
 import { Divider } from './ui/Divider';
-import type { Position, Settings } from '../types';
+import { ParkCluster } from './ParkCluster';
+import type { MachineState, Position, Settings } from '../types';
 
 const DEFAULT_STEP_SIZES = [0.1, 1, 10, 50];
 const FEED_INCREMENT = 10;
@@ -31,12 +32,17 @@ const KEY_JOG_MAP: Record<string, { X?: number; Y?: number; Z?: number }> = {
 
 interface Props {
   disabled: boolean;
+  /** Whether Park's real prerequisites (soft limits enabled, max travel configured - see connection.ts's park()) are actually met, not just whether the connection is open. */
+  parkReady: boolean;
+  machineState: MachineState | null;
+  /** Whether $H has actually completed successfully this connection - see connection.ts's own `homed` field. Park refuses to run without it, on the backend as well as here. */
+  isHomed: boolean;
   workPosition: Position | null;
   settings: Settings | null;
   send: (message: Record<string, unknown>) => void;
 }
 
-export function JogPanel({ disabled, workPosition, settings, send }: Props) {
+export function JogPanel({ disabled, parkReady, machineState, isHomed, workPosition, settings, send }: Props) {
   const stepSizes = settings?.general.jogStepSizes ?? DEFAULT_STEP_SIZES;
   const [step, setStep] = useState(1);
   const [feedrate, setFeedrate] = useState(1000);
@@ -218,6 +224,18 @@ export function JogPanel({ disabled, workPosition, settings, send }: Props) {
                 </button>
               </div>
             </div>
+
+            <Divider className="divider-vertical" />
+
+            <ParkCluster
+              disabled={disabled}
+              parkReady={parkReady}
+              machineState={machineState}
+              isHomed={isHomed}
+              defaultParkX={settings?.general.parkX ?? 'home'}
+              defaultParkY={settings?.general.parkY ?? 'home'}
+              send={send}
+            />
           </div>
 
           <div className="jog-zero-row">

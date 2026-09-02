@@ -16,6 +16,23 @@ export interface GeneralSettings {
    * a just-in-case safety net, not a required setup step. */
   spoilboardWidth: number;
   spoilboardHeight: number;
+  /**
+   * The preferred corner for the on-demand Park button/buttons (see
+   * ParkCluster, next to Jog Control) - not tied to any automatic
+   * post-job behavior. There used to be one: an automatic "park on job
+   * complete" action, removed once Park buttons existed as a manual
+   * alternative - it was redundant with (and could visibly fight) a
+   * G-code file's own end-of-program move, e.g. many CAM posts already
+   * emit their own "return to 0,0" right before M30. The machine now
+   * just does whatever the file itself does at the end; parking is
+   * purely something the user reaches for afterward if they want it.
+   * 'home' = the same side as the homing switch (machine coordinate 0 on
+   * that axis); 'far' = the opposite end of that axis's configured
+   * travel ($130/$131). Independent per axis so any of the 4 corners is
+   * reachable.
+   */
+  parkX: 'home' | 'far';
+  parkY: 'home' | 'far';
 }
 
 /** Each plugin's own flat settings bag - always has at least "enabled". */
@@ -33,6 +50,8 @@ const DEFAULT_SETTINGS: Settings = {
     jogStepSizes: [0.1, 1, 10, 50],
     spoilboardWidth: 0,
     spoilboardHeight: 0,
+    parkX: 'home',
+    parkY: 'home',
   },
   plugins: {},
 };

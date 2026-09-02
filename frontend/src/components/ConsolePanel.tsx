@@ -9,6 +9,10 @@ interface Props {
   defaultFeed: number;
   /** Owned by the parent (not this panel) - the Console tab bar's Auto-scroll switch lives outside this component. */
   autoScroll: boolean;
+  /** Owned by the parent too, alongside autoScroll - toggled from the same tab bar. Swaps the log to a much taller height for easier debugging. */
+  expanded: boolean;
+  /** Oldest first, newest last - what's actually been typed and sent from this input, persisted on the backend (see ConsoleHistoryStore) so it survives a page reload and a Pi reboot, and is shared across whatever browser/device connects. */
+  history: string[];
   send: (message: Record<string, unknown>) => void;
 }
 
@@ -18,9 +22,17 @@ interface Props {
 const FEED_MOVE = /G0*[123](?!\d)/i;
 const HAS_FEED_WORD = /F[-+]?[\d.]/i;
 
-export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, autoScroll, send }: Props) {
+export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, autoScroll, expanded, history, send }: Props) {
   const [command, setCommand] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
+  // null = editing a fresh line (the "draft"), not browsing history. A
+  // number is how far back into `history` (counting from its newest end)
+  // Up/Down has currently navigated to - same shape a shell's own history
+  // browsing uses. `draftRef` holds whatever was being typed before the
+  // first Up press, so Down can hand it back once you've paged past the
+  // most recent entry again, instead of just leaving the field empty.
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
+  const draftRef = useRef('');
 
   // Re-runs on every new log line, and also the moment the checkbox is
   // turned back on - so re-enabling it snaps straight back to the bottom
@@ -44,12 +56,43 @@ export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, auto
         : trimmed;
 
     send({ type: 'gcode', line });
+    // The exact text typed, not the auto-feed-expanded version - history
+    // should read back the same thing that was actually typed.
+    send({ type: 'consoleHistoryAdd', line: trimmed });
     setCommand('');
+    setHistoryIndex(null);
+    draftRef.current = '';
+  };
+
+  const recallHistory = (direction: 'older' | 'newer') => {
+    if (history.length === 0) return;
+    if (direction === 'older') {
+      if (historyIndex === null) {
+        draftRef.current = command;
+        const nextIndex = history.length - 1;
+        setHistoryIndex(nextIndex);
+        setCommand(history[nextIndex]);
+      } else if (historyIndex > 0) {
+        const nextIndex = historyIndex - 1;
+        setHistoryIndex(nextIndex);
+        setCommand(history[nextIndex]);
+      }
+    } else {
+      if (historyIndex === null) return;
+      if (historyIndex < history.length - 1) {
+        const nextIndex = historyIndex + 1;
+        setHistoryIndex(nextIndex);
+        setCommand(history[nextIndex]);
+      } else {
+        setHistoryIndex(null);
+        setCommand(draftRef.current);
+      }
+    }
   };
 
   return (
     <div className="console">
-      <div className="log" ref={logRef}>
+      <div className={expanded ? 'log expanded' : 'log'} ref={logRef}>
         {log.map((entry) => (
           <div key={entry.id} className={`log-line log-${entry.kind}`}>
             {entry.text}
@@ -60,10 +103,19 @@ export function ConsolePanel({ log, disabled, autoFeedEnabled, defaultFeed, auto
         <input
           type="text"
           value={command}
-          placeholder="Send raw G-code / $ command…"
+          placeholder="Send raw G-code / $ command… (↑↓ for history)"
           disabled={disabled}
           onChange={(e) => setCommand(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && submit()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit();
+            else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              recallHistory('older');
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              recallHistory('newer');
+            }
+          }}
         />
         <button disabled={disabled} onClick={submit}>
           <CornerDownLeft size={15} />

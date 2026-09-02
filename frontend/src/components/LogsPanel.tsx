@@ -11,6 +11,9 @@ interface Props {
   programStatus: ProgramStatus;
   settings: Settings | null;
   plugins: PluginInfo[];
+  /** Lifted to App.tsx, not local state here - see App.tsx's own comment on why (the Logs Drawer unmounts this component on close, which was silently forgetting a local "Clear"). */
+  clearedAt: number;
+  onClear: () => void;
 }
 
 function formatTime(timestamp: number): string {
@@ -23,7 +26,7 @@ function formatTime(timestamp: number): string {
  * failure or a startup problem without needing SSH + journalctl, which most
  * people running the pre-flashed image won't have set up.
  */
-export function LogsPanel({ log, connectionOpen, status, programStatus, settings, plugins }: Props) {
+export function LogsPanel({ log, connectionOpen, status, programStatus, settings, plugins, clearedAt, onClear }: Props) {
   const [autoScroll, setAutoScroll] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -39,7 +42,6 @@ export function LogsPanel({ log, connectionOpen, status, programStatus, settings
   // "Clear" only hides what's shown so far - the backend's own ring buffer
   // is the source of truth, and a fresh page load (or another open tab)
   // should still see full history, not a clear one browser tab triggered.
-  const [clearedAt, setClearedAt] = useState(0);
   const logRef = useRef<HTMLDivElement>(null);
 
   const visible = log.filter((entry) => entry.timestamp > clearedAt);
@@ -65,7 +67,7 @@ export function LogsPanel({ log, connectionOpen, status, programStatus, settings
             <Download size={14} />
             {exporting ? 'Exporting…' : 'Export diagnostics'}
           </button>
-          <button className="tertiary" onClick={() => setClearedAt(Date.now())} disabled={visible.length === 0}>
+          <button className="tertiary" onClick={onClear} disabled={visible.length === 0}>
             <Trash2 size={14} />
             Clear
           </button>

@@ -19,6 +19,18 @@ export interface PluginManifest {
   panel?: boolean;
   /** Which dashboard column the panel renders in - defaults to 'left' (below Actions), matching every panel plugin before this field existed. */
   panelColumn?: 'left' | 'right';
+  /**
+   * True if this plugin is a one-off tool (a G-code generator, a wizard -
+   * something configured occasionally, not glanced at during a job) rather
+   * than a live dashboard panel. Listed under the sidebar's Tools tab
+   * instead of permanently occupying dashboard space; opening it shows a
+   * modal that iframes this plugin's own GET /dialog route (same
+   * self-contained-HTML contract as `panel`'s /panel route, same
+   * postMessage bridge) and closes itself once the plugin's dialog sends a
+   * "closeToolDialog" message - typically right after successfully
+   * generating something and loading it via ctx.runner.load().
+   */
+  tool?: boolean;
 }
 
 export type SchemaFieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'hint';

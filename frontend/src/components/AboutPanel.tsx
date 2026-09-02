@@ -1,4 +1,4 @@
-import { ArrowUpCircle, Coffee, GitFork } from 'lucide-react';
+import { ArrowUpCircle, Coffee, GitFork, Tag } from 'lucide-react';
 import { APP_VERSION, type LatestAppVersion } from '../version';
 
 interface Props {
@@ -24,6 +24,20 @@ export function AboutPanel({ latestVersion, onOpenUpdate }: Props) {
       >
         <GitFork size={15} />
         github.com/MP3DPT/fluidnc-webcontrol
+      </a>
+      {/* Always visible, not just when an update is pending - the banner
+          below only appears while behind, so this is the only way to see
+          what's new after already being on the latest version. GitHub's own
+          "/releases/latest" redirect, so it's never stale and needs no API
+          call to keep correct. */}
+      <a
+        className="about-github-link"
+        href="https://github.com/MP3DPT/fluidnc-webcontrol/releases/latest"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Tag size={15} />
+        Latest release notes
       </a>
 
       {latestVersion && (

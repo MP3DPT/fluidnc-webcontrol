@@ -55,7 +55,7 @@ export interface ProbeResult {
 
 export interface LogEntry {
   id: number;
-  kind: 'welcome' | 'feedback' | 'alarm' | 'error' | 'info';
+  kind: 'welcome' | 'feedback' | 'alarm' | 'error' | 'info' | 'message';
   text: string;
 }
 
@@ -92,6 +92,9 @@ export interface GeneralSettings {
   /** Working area size in mm from machine (0,0); 0 = not configured, skip that axis's "job is bigger than the working area" check. See App.tsx's applyLoadedFile. */
   spoilboardWidth: number;
   spoilboardHeight: number;
+  /** The preferred corner for the on-demand Park button(s) (see ParkCluster, next to Jog Control) - see backend/src/settings/store.ts for the full reasoning, including why there's no automatic "park on job complete" action anymore. 'home' = same side as that axis's homing switch (machine 0); 'far' = the opposite end of its configured travel. */
+  parkX: 'home' | 'far';
+  parkY: 'home' | 'far';
 }
 
 /** A plugin's own flat settings bag - always has at least "enabled". */
@@ -113,6 +116,8 @@ export interface PluginManifest {
   panel?: boolean;
   /** Which dashboard column the panel renders in - defaults to 'left' (below Actions), matching every panel plugin before this field existed. */
   panelColumn?: 'left' | 'right';
+  /** True if this plugin is a one-off tool (a G-code generator, a wizard) opened on demand from the sidebar's Tools tab as a modal, served at /api/plugins/<id>/dialog - see backend/src/plugins/types.ts for the full rationale. */
+  tool?: boolean;
 }
 
 export type SchemaFieldType = 'text' | 'password' | 'number' | 'checkbox' | 'select' | 'hint';

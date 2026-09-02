@@ -43,8 +43,7 @@
     },
     { "key": "spinUpSeconds", "type": "number", "label": "Spin-up delay", "unit": "s", "default": 4 },
     { "key": "autoStart", "type": "checkbox", "label": "Turn on before running a job", "default": true },
-    { "key": "autoStop", "type": "checkbox", "label": "Turn off when the job ends (always, regardless of how it ended)", "default": true },
-    { "key": "autoReturnToOrigin", "type": "checkbox", "label": "Return to X0 Y0 - only on a clean completion", "default": true }
+    { "key": "autoStop", "type": "checkbox", "label": "Turn off when the job ends (always, regardless of how it ended)", "default": true }
   ],
   "actions": [
     { "id": "test-on", "label": "Test: Turn On", "enabledIf": { "driver": "tuya-local" } },

@@ -9,6 +9,7 @@ import { SettingsStore, type Settings } from '../settings/store.js';
 import { rebootSystem, restartService, shutdownSystem } from '../system/power.js';
 import { PluginLoader } from '../plugins/loader.js';
 import type { LogStore } from '../logging/logStore.js';
+import type { ConsoleHistoryStore } from '../console/historyStore.js';
 import { applyUpdate } from '../update/updater.js';
 
 // backend/src/websocket/server.ts -> backend/plugins-bundled
@@ -26,6 +27,12 @@ type ClientMessage =
   | { type: 'feedHold' }
   | { type: 'cycleStart' }
   | { type: 'gcode'; line: string }
+  // What the user actually typed into the Console tab's input and sent -
+  // recorded separately from 'gcode' itself since plenty of *other* UI
+  // controls (Zero X, the jog panel's 0,0 button, ...) also send raw
+  // lines via 'gcode' and shouldn't clutter this history with things the
+  // user never typed. See ConsoleHistoryStore.
+  | { type: 'consoleHistoryAdd'; line: string }
   | { type: 'updateSettings'; settings: Partial<Settings> }
   | { type: 'restoreSettings'; settings: unknown }
   | { type: 'updatePluginSettings'; pluginId: string; settings: Record<string, unknown> }
@@ -39,7 +46,12 @@ type ClientMessage =
   | { type: 'clearProgram' }
   | { type: 'systemReboot' }
   | { type: 'systemShutdown' }
-  | { type: 'getFirmwareSettings' };
+  | { type: 'getFirmwareSettings' }
+  // parkX/parkY let a caller park to a specific corner on demand (the
+  // main-screen corner buttons) without touching the saved Settings ->
+  // Job Completion default - omitting them (the "Park" button proper)
+  // falls back to that default, same as the post-job auto-park above.
+  | { type: 'park'; parkX?: 'home' | 'far'; parkY?: 'home' | 'far' };
 
 function broadcast(wss: WebSocketServer, message: unknown) {
   const payload = JSON.stringify(message);
@@ -53,6 +65,7 @@ export async function attachWebSocketServer(
   connection: FluidNCConnection,
   httpApp: Express,
   logStore: LogStore,
+  historyStore: ConsoleHistoryStore,
 ) {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   const runner = new ProgramRunner(connection);
@@ -128,10 +141,30 @@ export async function attachWebSocketServer(
   connection.on('status', forward('status'));
   connection.on('alarm', forward('alarm'));
   connection.on('feedback', forward('feedback'));
+  // Anything the controller sends back that isn't status/feedback/ok/error -
+  // most notably $-setting readbacks like "$23=3" from typing "$23" or "$$"
+  // in the Console. Previously silently dropped here (connection.ts still
+  // emitted it, nothing forwarded it), so Console showed nothing at all for
+  // those - confirmed the hard way asking for a $23 value to fix Park's
+  // corner-direction math.
+  connection.on('message', forward('message'));
   connection.on('probeResult', forward('probeResult'));
   connection.on('welcome', forward('welcome'));
   connection.on('open', forward('connectionOpen'));
   connection.on('close', forward('connectionClosed'));
+  // Whether $H has actually completed successfully this connection - see
+  // connection.ts's own `homed` field for why this exists and isn't
+  // inferred from machine state. Drives the Home button's attention pulse
+  // and Park's guard on the frontend.
+  connection.on('homed', forward('homed'));
+  // A rejected command (Grbl's "error:N" response, distinct from an
+  // ALARM) used to fail silently - the in-flight command's promise
+  // rejected, but nothing told a connected browser it happened at all.
+  // Surfaced as a regular error log line, reusing the same 'error' type
+  // the frontend already renders for commandError/portError.
+  connection.on('commandErrorLine', (line: string) =>
+    broadcast(wss, { type: 'error', data: `Controller rejected a command: ${line}` }),
+  );
   connection.on('portError', (err: Error) => broadcast(wss, { type: 'portError', data: err.message }));
 
   runner.on('loaded', forward('programLoaded'));
@@ -139,18 +172,33 @@ export async function attachWebSocketServer(
   runner.on('programStatus', forward('programStatus'));
   runner.on('programError', forward('programError'));
 
+  // There used to be an automatic "what happens when a job finishes"
+  // action here (Settings -> jobCompletionAction: stay/origin/park),
+  // removed once the on-demand Park buttons (see ParkCluster) existed as
+  // a manual alternative - confirmed on real hardware that it could
+  // visibly fight a G-code file's own end-of-program move (many CAM
+  // posts already emit their own "return to 0,0" right before M30, so
+  // the machine would go there, then immediately get yanked to a park
+  // corner). The machine now just does whatever the file itself does at
+  // the end; parking is purely something the user reaches for afterward.
+
   // Broadcast (not just reply-to-sender) so every open browser stays in
   // sync when settings change from any one of them.
   settingsStore.on('change', forward('settings'));
 
   logStore.on('line', forward('backendLogLine'));
+  // Broadcast (not just reply-to-sender) so every open browser's history
+  // dropdown stays in sync, matching settingsStore's own reasoning.
+  historyStore.on('change', forward('consoleHistory'));
 
   wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ type: 'connectionState', data: { isOpen: connection.isOpen } }));
+    ws.send(JSON.stringify({ type: 'homed', data: connection.isHomed }));
     ws.send(JSON.stringify({ type: 'programStatus', data: runner.getState() }));
     ws.send(JSON.stringify({ type: 'settings', data: settingsStore.get() }));
     ws.send(JSON.stringify({ type: 'plugins', data: pluginLoader.list() }));
     ws.send(JSON.stringify({ type: 'backendLogs', data: logStore.list() }));
+    ws.send(JSON.stringify({ type: 'consoleHistory', data: historyStore.list() }));
     ws.send(JSON.stringify({ type: 'updateStatus', data: updateStatus }));
 
     ws.on('message', async (raw) => {
@@ -184,6 +232,11 @@ export async function attachWebSocketServer(
           case 'home':
             await connection.home();
             break;
+          case 'park': {
+            const defaults = settingsStore.get().general;
+            await connection.park(msg.parkX ?? defaults.parkX, msg.parkY ?? defaults.parkY);
+            break;
+          }
           case 'unlock':
             await connection.unlock();
             break;
@@ -198,6 +251,9 @@ export async function attachWebSocketServer(
             break;
           case 'gcode':
             await connection.sendLine(msg.line);
+            break;
+          case 'consoleHistoryAdd':
+            historyStore.add(msg.line);
             break;
           case 'updateSettings':
             settingsStore.update(msg.settings);

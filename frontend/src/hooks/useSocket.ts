@@ -20,6 +20,12 @@ export function useSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const [wsReady, setWsReady] = useState(false);
   const [connectionOpen, setConnectionOpen] = useState(false);
+  // Whether $H has actually completed successfully this connection - the
+  // backend is the source of truth (see connection.ts's own `homed` field);
+  // this just mirrors its broadcasts. Resets to false on every disconnect,
+  // matching the backend's own "a fresh connection starts distrusted"
+  // stance - see App.tsx's Home-button pulse and ParkCluster's guard.
+  const [isHomed, setIsHomed] = useState(false);
   const [status, setStatus] = useState<StatusReport | null>(null);
   const [workPosition, setWorkPosition] = useState<Position | null>(null);
   const lastWcoRef = useRef<Position | null>(null);
@@ -29,8 +35,19 @@ export function useSocket() {
   const [programStatus, setProgramStatus] = useState<ProgramStatus>({ state: 'idle', sent: 0, total: 0 });
   const [settings, setSettings] = useState<Settings | null>(null);
   const [machineRates, setMachineRates] = useState<MachineRates | null>(null);
+  // The full raw $$ dump (every "$N" key, e.g. $20 soft limits, $23 homing
+  // direction, $130/$131 max travel) - kept alongside the narrower
+  // machineRates extraction above rather than replacing it, since existing
+  // code already depends on that shape. Used by the Job Completion settings
+  // section to show whether Park's prerequisites are actually met.
+  const [fluidncSettings, setFluidncSettings] = useState<Record<string, number> | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [backendLog, setBackendLog] = useState<BackendLogEntry[]>([]);
+  // What's actually been typed and sent from the Console tab's own input -
+  // backend-persisted (see ConsoleHistoryStore), so it's the same
+  // regardless of which browser/device connects and survives a Pi reboot,
+  // not just a page reload. Oldest first, newest last.
+  const [consoleHistory, setConsoleHistory] = useState<string[]>([]);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ status: 'idle' });
   // Set only by a live 'complete' broadcast (see the message handler below) -
   // by construction that only ever happens while already connected, so
@@ -105,11 +122,24 @@ export function useSocket() {
             lastWcoRef.current = null;
             appendLog('info', 'Serial port disconnected');
             break;
+          // Whether $H has actually completed successfully this connection -
+          // see connection.ts's own `homed` field for the full reasoning.
+          // Drives the Home button's attention pulse and Park's guard.
+          case 'homed':
+            setIsHomed(Boolean(msg.data));
+            break;
           case 'welcome':
             appendLog('welcome', msg.data as string);
             break;
           case 'feedback':
             appendLog('feedback', msg.data as string);
+            break;
+          // Anything else the controller sent back - most commonly a
+          // $-setting readback (e.g. "$23=3") from typing "$23" or "$$"
+          // into the Console. See connection.ts's handleLine/'message' for
+          // what does and doesn't end up here.
+          case 'message':
+            appendLog('message', msg.data as string);
             break;
           case 'alarm':
             appendLog('alarm', `ALARM:${msg.data}`);
@@ -138,6 +168,12 @@ export function useSocket() {
             break;
           case 'backendLogs':
             setBackendLog(msg.data as BackendLogEntry[]);
+            break;
+          // Full replace each time (unlike backendLogLine's own append) -
+          // the backend already sends the complete capped list on every
+          // change, same as settingsStore's own 'change' broadcast.
+          case 'consoleHistory':
+            setConsoleHistory(msg.data as string[]);
             break;
           case 'updateStatus': {
             const data = msg.data as UpdateStatus;
@@ -176,6 +212,7 @@ export function useSocket() {
             if (raw['$110'] !== undefined && raw['$111'] !== undefined && raw['$112'] !== undefined) {
               setMachineRates({ x: raw['$110'], y: raw['$111'], z: raw['$112'] });
             }
+            setFluidncSettings(raw);
             break;
           }
           case 'commandError':
@@ -200,6 +237,12 @@ export function useSocket() {
     wsRef.current?.send(JSON.stringify(message));
   }, []);
 
+  // Console's own log is client-side-only state to begin with (unlike the
+  // Logs drawer's backend-held history), so unlike that panel's "Clear" this
+  // one can just truncate the array directly - no need for a timestamp
+  // filter to survive a remount.
+  const clearConsole = useCallback(() => setLog([]), []);
+
   /** Same plugin-action call the Settings modal's test buttons use, but returns a Promise correlated by requestId - lets an on-dashboard plugin panel (see PluginPanels.tsx) await its own result instead of only getting a fire-and-forget log line. */
   const invokePluginAction = useCallback((pluginId: string, actionId: string, params?: unknown): Promise<unknown> => {
     return new Promise((resolve, reject) => {
@@ -219,6 +262,7 @@ export function useSocket() {
   return {
     wsReady,
     connectionOpen,
+    isHomed,
     status,
     workPosition,
     ports,
@@ -227,10 +271,13 @@ export function useSocket() {
     programStatus,
     settings,
     machineRates,
+    fluidncSettings,
     plugins,
     backendLog,
+    consoleHistory,
     updateStatus,
     send,
     invokePluginAction,
+    clearConsole,
   };
 }
