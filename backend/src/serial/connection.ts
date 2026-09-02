@@ -183,6 +183,15 @@ export class FluidNCConnection extends EventEmitter {
 
     const errorCode = parseError(line);
     if (errorCode !== null) {
+      // Previously silent - failPending() rejected the in-flight command's
+      // promise, but nothing ever told a connected browser this happened,
+      // so a rejected command (e.g. $H itself) could fail with literally
+      // no visible trace anywhere in Console or Logs. Confirmed the hard
+      // way: Home appeared to complete cleanly (no alarm, full homing
+      // debug trace, real motion) while never actually marking itself
+      // homed - the missing piece was an error:N response this line was
+      // silently swallowing instead of surfacing.
+      this.emit('commandErrorLine', line);
       this.failPending(new Error(`error:${errorCode}`));
       return;
     }

@@ -149,6 +149,14 @@ export async function attachWebSocketServer(
   // inferred from machine state. Drives the Home button's attention pulse
   // and Park's guard on the frontend.
   connection.on('homed', forward('homed'));
+  // A rejected command (Grbl's "error:N" response, distinct from an
+  // ALARM) used to fail silently - the in-flight command's promise
+  // rejected, but nothing told a connected browser it happened at all.
+  // Surfaced as a regular error log line, reusing the same 'error' type
+  // the frontend already renders for commandError/portError.
+  connection.on('commandErrorLine', (line: string) =>
+    broadcast(wss, { type: 'error', data: `Controller rejected a command: ${line}` }),
+  );
   connection.on('portError', (err: Error) => broadcast(wss, { type: 'portError', data: err.message }));
 
   runner.on('loaded', forward('programLoaded'));
