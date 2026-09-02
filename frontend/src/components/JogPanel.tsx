@@ -222,16 +222,18 @@ export function JogPanel({ disabled, parkReady, machineState, workPosition, sett
                 </button>
               </div>
             </div>
-
-            <ParkCluster
-              disabled={disabled}
-              parkReady={parkReady}
-              machineState={machineState}
-              defaultParkX={settings?.general.parkX ?? 'home'}
-              defaultParkY={settings?.general.parkY ?? 'home'}
-              send={send}
-            />
           </div>
+
+          <Divider />
+
+          <ParkCluster
+            disabled={disabled}
+            parkReady={parkReady}
+            machineState={machineState}
+            defaultParkX={settings?.general.parkX ?? 'home'}
+            defaultParkY={settings?.general.parkY ?? 'home'}
+            send={send}
+          />
 
           <div className="jog-zero-row">
             <button className="tertiary" disabled={disabled} onClick={() => zero('X')}>
