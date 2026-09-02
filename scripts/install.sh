@@ -12,15 +12,18 @@ set -euo pipefail
 # should be a step you take knowingly.
 #
 # What it does:
-#   1. Installs Node.js 20 (via nvm, as your user - no system-wide changes)
-#   2. Adds your user to the `dialout` group (serial port access)
-#   3. Installs dependencies and builds the frontend + backend
-#   4. Adds a scoped, passwordless sudoers entry for ONLY `/sbin/shutdown`
+#   1. Installs the system packages the bundled plugins need (gpiod for Fan
+#      SHIM Control, ffmpeg + v4l-utils for Webcam Preview) - so every
+#      bundled plugin works out of the box, not just the core app
+#   2. Installs Node.js 20 (via nvm, as your user - no system-wide changes)
+#   3. Adds your user to the `dialout` group (serial port access)
+#   4. Installs dependencies and builds the frontend + backend
+#   5. Adds a scoped, passwordless sudoers entry for ONLY `/sbin/shutdown`
 #      (powers the header's Reboot/Shutdown buttons) and
 #      `systemctl restart fluidnc-webcontrol` (powers the in-app "Update
 #      now" button's own restart at the end - see backend/src/update) -
 #      remove /etc/sudoers.d/fluidnc-webcontrol later if you don't want this
-#   5. Installs + enables a systemd service so it starts automatically on
+#   6. Installs + enables a systemd service so it starts automatically on
 #      boot and restarts if it crashes
 
 if [ "$EUID" -ne 0 ]; then
@@ -32,6 +35,16 @@ REAL_USER="${SUDO_USER:-$(whoami)}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "==> Installing fluidnc-webcontrol for user '$REAL_USER' from $REPO_DIR"
+
+# Neither ships with Raspberry Pi OS by default, and neither this app nor
+# npm installs them - without these, Fan SHIM Control and Webcam Preview
+# (both bundled, both enabled-by-default-capable) fail at first use with
+# no obvious hint why. gpiod itself is normally already present on current
+# Raspberry Pi OS builds, but apt install is a harmless no-op if so - never
+# worth a conditional check just to skip an already-satisfied install.
+echo "==> Installing system packages the bundled plugins need (gpiod, ffmpeg, v4l-utils)"
+apt-get update
+apt-get install -y gpiod ffmpeg v4l-utils
 
 echo "==> Checking for Node.js"
 if ! sudo -u "$REAL_USER" bash -lc 'command -v node' >/dev/null 2>&1; then

@@ -4,7 +4,7 @@ Live preview for up to 4 cameras — USB webcams plugged into the Pi, or IP came
 
 ## Before you install: one system package
 
-USB cameras need **ffmpeg** and **v4l2-ctl** (from `v4l-utils`) installed on the Pi itself — neither comes with Node.js or this app, and neither gets installed automatically. Without them, a USB camera tile will just fail to start.
+USB cameras need **ffmpeg** and **v4l2-ctl** (from `v4l-utils`) installed on the Pi itself — neither comes with Node.js or this app. `scripts/install.sh` installs both automatically on a normal install, so there's usually nothing to do here. If you're on an older install from before that, or a USB camera tile fails to start, install them yourself:
 
 ```bash
 sudo apt update

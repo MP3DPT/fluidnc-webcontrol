@@ -74,10 +74,11 @@ Shipped today (wiki links include setup steps and troubleshooting):
 
 | Plugin | What it does | Setup |
 |---|---|---|
-| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM | [Needs `gpiod`](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Fan-SHIM-Control) |
+| Fan SHIM Control | Temperature-based fan control for the Pimoroni Fan SHIM | Needs `gpiod` — already installed by `install.sh` |
 | Notifications | Pushes alarms, job-completion, and connection-loss events to ntfy.sh, Discord, or Telegram | [Needs a provider account](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Notifications) |
 | Smart Plug Control | Turns the spindle's smart plug on before a job (with a spin-up delay) and off after, regardless of how the job ended | [Needs a one-time Tuya key extraction](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Smart-Plug-Control) |
-| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen | [Needs `ffmpeg` + `v4l-utils`](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Webcam-Preview) |
+| Surfacing / Facing | On-demand G-code generator (Tools tab) for wasteboard/spoilboard surfacing - raster or spiral, target-depth or full-wasteboard mode | None — open it from the Tools tab and generate |
+| Webcam Preview | Live preview for one or more USB or IP webcams on the main screen | Needs `ffmpeg` + `v4l-utils` — already installed by `install.sh` |
 | Z-Probe \| Touch Plate | Touch-plate Z probing with plate-thickness correction | [None — just enter your plate's dimensions](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugin-Z-Probe-Touch-Plate) |
 
 See the wiki's [Plugins overview](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Plugins) for the full picture, and [Writing a Plugin](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Writing-a-Plugin) for the complete `PluginContext` API if you want to build your own. Short version: a plugin gets a `PluginContext` — the serial connection, the program runner, its own settings store, `registerBeforeRun`/`registerAction` hooks, and its own Express router under `/api/plugins/<id>`. Any folder under [`plugins/`](plugins) is a working example; `backend/src/plugins/types.ts` has the exact interface.

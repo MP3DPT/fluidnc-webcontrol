@@ -1,0 +1,18 @@
+# Normalize every text file to LF in the repository itself, regardless of
+# a contributor's local core.autocrlf setting. Without this, a Windows
+# checkout re-introduces CRLF into working-tree copies of files that are
+# supposed to be byte-identical to a plugin's own .zip/backend/plugins-bundled
+# copy (see scripts/sync-plugins.mjs) - invisible locally (both sides end up
+# CRLF, so they still "agree" with each other), but a real mismatch against
+# what CI, and every real installer, actually checks out. Confirmed the hard
+# way, more than once.
+* text=auto eol=lf
+
+# Windows batch files genuinely want CRLF - leave this one alone rather
+# than force it to LF along with everything else above.
+run-dev.bat text eol=crlf
+
+# Binary - never line-ending-normalize or diff these.
+*.png binary
+*.gif binary
+*.zip binary
