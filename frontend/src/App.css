@@ -977,6 +977,16 @@ main {
   margin: 0;
 }
 
+/* Vertical variant - separates ParkCluster from the Z jog strip (see
+   JogPanel). The margin on each side comes for free from .jog-cluster's
+   own gap (applied uniformly between every adjacent pair of items), so
+   this needs no margin of its own to avoid touching either module. */
+.divider-vertical {
+  width: 1px;
+  height: auto;
+  align-self: stretch;
+}
+
 /* ============================================================
    Form controls (Input / Select)
    ============================================================ */
@@ -1689,8 +1699,8 @@ button.ghost:not(:disabled):hover {
 
 .park-grid {
   display: grid;
-  grid-template-columns: repeat(2, 3rem);
-  grid-template-rows: repeat(2, 3rem);
+  grid-template-columns: repeat(2, 2.5rem);
+  grid-template-rows: repeat(2, 2.5rem);
   gap: var(--space-2);
 }
 
