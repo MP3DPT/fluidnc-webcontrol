@@ -91,7 +91,7 @@ For a step-by-step walkthrough (including first connection and what to do next),
 
 ### Pre-flashed SD card image (fastest)
 
-Skip the install entirely: download the pre-flashed image from the [v0.4.7 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.7) ([`fluidnc-webcontrol.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.4.7/fluidnc-webcontrol.img.xz), ~745MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
+Skip the install entirely: download the pre-flashed image from the [v0.4.8 release](https://github.com/MP3DPT/fluidnc-webcontrol/releases/tag/v0.4.8) ([`fluidnc-webcontrol-v0.4.8.img.xz`](https://github.com/MP3DPT/fluidnc-webcontrol/releases/download/v0.4.8/fluidnc-webcontrol-v0.4.8.img.xz), ~736MB) and flash it with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) using "Use custom" to select the `.img.xz` directly - it decompresses automatically, no OS customization step needed, SSH is already enabled.
 
 This image includes the in-app auto-updater (Settings → About → "Update now"), so future releases generally won't need a fresh image at all - see the release notes, or the wiki's [Updating the App](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Updating-the-App), for what does still warrant one.
 
