@@ -17,16 +17,12 @@ interface Props {
 }
 
 /**
- * Its own row inside the Jog Control card (see JogPanel), below the
- * compass/Z strip rather than squeezed into their row - that row has zero
- * spare width at the column size Settings locks in (confirmed by direct
- * measurement, not assumption). Lives here at all rather than a generic
- * Actions button because the real motivation (see Settings -> Park
- * Corner's own comment) is clearing the spindle out of the way to place
- * material, the same moment someone's reaching for the jog buttons
- * anyway. Deliberately NOT tied to any automatic "on job complete"
- * behavior (there used to be one - removed, see
- * backend/src/settings/store.ts) - purely on-demand.
+ * Lives right next to Jog Control (see JogPanel) rather than a generic
+ * Actions button - the real motivation (see Settings -> Park Corner's own
+ * comment) is clearing the spindle out of the way to place material, the
+ * same moment someone's reaching for the jog buttons anyway. Deliberately
+ * NOT tied to any automatic "on job complete" behavior (there used to be
+ * one - removed, see backend/src/settings/store.ts) - purely on-demand.
  *
  * The four corner buttons park to that specific corner immediately,
  * independent of whatever's saved in Settings - "any corner, right now".
@@ -67,7 +63,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: home X, far Y'}
             onClick={() => parkTo('home', 'far')}
           >
-            <CornerBracket corner="top-left" size={20} />
+            <CornerBracket corner="top-left" size={13} />
           </button>
           <button
             className="park-corner-btn"
@@ -75,7 +71,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: far X, far Y'}
             onClick={() => parkTo('far', 'far')}
           >
-            <CornerBracket corner="top-right" size={20} />
+            <CornerBracket corner="top-right" size={13} />
           </button>
           <button
             className="park-corner-btn"
@@ -83,7 +79,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: home X, home Y (machine 0,0)'}
             onClick={() => parkTo('home', 'home')}
           >
-            <CornerBracket corner="bottom-left" size={20} />
+            <CornerBracket corner="bottom-left" size={13} />
           </button>
           <button
             className="park-corner-btn"
@@ -91,7 +87,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
             title={title ?? 'Park: far X, home Y'}
             onClick={() => parkTo('far', 'home')}
           >
-            <CornerBracket corner="bottom-right" size={20} />
+            <CornerBracket corner="bottom-right" size={13} />
           </button>
         </div>
         <button
@@ -100,7 +96,7 @@ export function ParkCluster({ disabled, parkReady, machineState, defaultParkX, d
           title={title ?? 'Rapids to the corner set in Settings → Park Corner'}
           onClick={() => parkTo(defaultParkX, defaultParkY)}
         >
-          <MapPin size={16} />
+          <MapPin size={11} />
           Park
         </button>
       </div>
