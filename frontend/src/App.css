@@ -1715,10 +1715,6 @@ button.ghost:not(:disabled):hover {
   transform: scale(0.94);
 }
 
-/* Height makes the whole park-cluster block (grid + this button + the gap
-   between them) come out to exactly the compass's own height (10.75rem),
-   so Park's bottom edge lines up with the bottom of the Z strip/compass
-   instead of ending short of it. */
 .park-btn {
   display: flex;
   flex-direction: row;
@@ -1726,7 +1722,7 @@ button.ghost:not(:disabled):hover {
   justify-content: center;
   gap: 0.35rem;
   width: 100%;
-  height: 3.75rem;
+  height: 2rem;
   padding: 0;
   font-size: 0.75rem;
   font-weight: 700;
