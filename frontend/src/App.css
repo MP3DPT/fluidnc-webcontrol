@@ -1667,7 +1667,10 @@ button.ghost:not(:disabled):hover {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  align-items: center;
+  /* Top-aligned, not centered - Park's block (label+grid+button) is
+     shorter overall than the compass's, so centering it left "PARK"
+     sitting visibly lower than "X / Y" and "Z" instead of matching them. */
+  align-items: flex-start;
   width: 100%;
 }
 
