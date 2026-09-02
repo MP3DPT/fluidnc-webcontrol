@@ -52,15 +52,48 @@ if [[ "$HOSTNAME_NOW" != *build* ]]; then
   exit 1
 fi
 
+# Discovered from the actually-installed systemd unit, not hardcoded - this
+# script is meant to run after scripts/install-image.sh specifically (fixed
+# system account, /opt/fluidnc-webcontrol, data at /var/lib/fluidnc-webcontrol
+# via an explicit FLUIDNC_DATA_DIR override), but reading it back out of the
+# unit rather than hardcoding it again here means this stays correct even if
+# install-image.sh's own layout ever changes, instead of two files having to
+# be kept in sync by hand. Falls back to homedir()/.fluidnc-webcontrol (see
+# backend/src/dataDir.ts) only when the unit has no FLUIDNC_DATA_DIR line -
+# i.e. if this ever gets run against a scripts/install.sh per-user install
+# instead, which normally wouldn't be sanitized/imaged at all, but there's
+# no reason to hardcode a wrong answer for that case either.
+SERVICE_FILE_INSTALLED=/etc/systemd/system/fluidnc-webcontrol.service
+if [ ! -f "$SERVICE_FILE_INSTALLED" ]; then
+  echo "!! $SERVICE_FILE_INSTALLED not found - did scripts/install-image.sh"
+  echo "!! actually run on this Pi? Nothing to sanitize."
+  exit 1
+fi
+APP_INSTALL_DIR="$(grep '^WorkingDirectory=' "$SERVICE_FILE_INSTALLED" | cut -d= -f2-)"
+APP_USER="$(grep '^User=' "$SERVICE_FILE_INSTALLED" | cut -d= -f2-)"
+APP_USER_HOME="$(getent passwd "$APP_USER" | cut -d: -f6)"
+APP_DATA_DIR="$(grep '^Environment=FLUIDNC_DATA_DIR=' "$SERVICE_FILE_INSTALLED" | cut -d= -f3-)"
+if [ -z "$APP_DATA_DIR" ]; then
+  APP_DATA_DIR="$APP_USER_HOME/.fluidnc-webcontrol"
+fi
+if [ -z "$APP_INSTALL_DIR" ] || [ -z "$APP_USER_HOME" ]; then
+  echo "!! Couldn't read WorkingDirectory=/User= from $SERVICE_FILE_INSTALLED"
+  echo "!! - refusing to guess. Check that file's contents manually."
+  exit 1
+fi
+
 if [ "$AUTO_YES" != true ]; then
   echo "This will PERMANENTLY, on THIS Pi ($HOSTNAME_NOW):"
   echo "  - Reset the pi account password to the documented default (raspberry)"
   echo "  - Remove every key from pi's authorized_keys"
   echo "  - Delete all SSH host keys (regenerated fresh on next real boot)"
-  echo "  - Delete fluidnc-webcontrol's settings, plugin config, and G-code library"
+  echo "  - Delete fluidnc-webcontrol's settings, plugin config, and G-code"
+  echo "    library ($APP_DATA_DIR)"
   echo "  - Delete the in-app updater's own working directory (any leftover"
-  echo "    previous-version backup, staging, or extract data)"
-  echo "  - Clear machine-id, the orphaned swapfile, and the apt cache"
+  echo "    previous-version backup, staging, or extract data - under"
+  echo "    $APP_INSTALL_DIR/.update)"
+  echo "  - Clear $APP_USER's npm cache, machine-id, the orphaned swapfile,"
+  echo "    and the apt cache"
   if [ "$DO_SHUTDOWN" = true ]; then
     echo "  - Shut this Pi down when finished"
   fi
@@ -89,16 +122,26 @@ echo "==> Removing orphaned swapfile and apt cache"
 rm -f /var/swap
 apt-get clean
 
-echo "==> Wiping fluidnc-webcontrol's saved state"
-rm -f /var/lib/fluidnc-webcontrol/settings.json
-rm -rf /var/lib/fluidnc-webcontrol/gcode-library
-rm -rf /var/lib/fluidnc-webcontrol/.npm /var/lib/fluidnc-webcontrol/.npm_cache /var/lib/fluidnc-webcontrol/.npm_logs
-rm -f /var/lib/fluidnc-webcontrol/.npm_update-notifier-last-checked
+echo "==> Wiping fluidnc-webcontrol's saved state ($APP_DATA_DIR)"
+rm -f "$APP_DATA_DIR/settings.json"
+rm -rf "$APP_DATA_DIR/gcode-library"
+rm -f "$APP_DATA_DIR/console-history.json"
 # Everything above is recreated with defaults on the app's next start -
 # nothing needs to pre-exist (same self-healing pattern SettingsStore and
 # FileLibraryStore already use for a normal fresh install).
 
-echo "==> Wiping the in-app updater's own working directory"
+echo "==> Clearing $APP_USER's npm cache ($APP_USER_HOME/.npm)"
+# node_modules itself (inside $APP_INSTALL_DIR) stays - the app needs it to
+# run. This is npm's separate download/build cache - non-trivial in size
+# after install-image.sh's own `npm install` populated it (that service
+# account's $HOME is the data dir itself, per its --home-dir flag, so this
+# really does land under $APP_DATA_DIR when FLUIDNC_DATA_DIR is set - same
+# path, cleared once here rather than needing special-casing). Safe to
+# remove either way; npm re-populates it on demand, nothing here is
+# load-bearing.
+rm -rf "$APP_USER_HOME/.npm"
+
+echo "==> Wiping the in-app updater's own working directory ($APP_INSTALL_DIR/.update)"
 # backend/src/update/updater.ts (see that file's own comments) keeps
 # installDir/.update/previous around on purpose after every successful
 # update, as a manual SSH rollback option - a full copy of whatever version
@@ -110,7 +153,7 @@ echo "==> Wiping the in-app updater's own working directory"
 # transient mid-update scratch space (cleaned up by updater.ts itself in
 # both the success and failure paths), so finding either non-empty here
 # would mean a build was captured mid-update - also worth guarding against.
-rm -rf /opt/fluidnc-webcontrol/.update
+rm -rf "$APP_INSTALL_DIR/.update"
 
 echo "==> Clearing /tmp"
 # Belt-and-suspenders, not a fix for an actual bug: confirmed /tmp is
