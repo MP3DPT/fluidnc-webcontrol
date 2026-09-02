@@ -43,6 +43,11 @@ export function useSocket() {
   const [fluidncSettings, setFluidncSettings] = useState<Record<string, number> | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [backendLog, setBackendLog] = useState<BackendLogEntry[]>([]);
+  // What's actually been typed and sent from the Console tab's own input -
+  // backend-persisted (see ConsoleHistoryStore), so it's the same
+  // regardless of which browser/device connects and survives a Pi reboot,
+  // not just a page reload. Oldest first, newest last.
+  const [consoleHistory, setConsoleHistory] = useState<string[]>([]);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ status: 'idle' });
   // Set only by a live 'complete' broadcast (see the message handler below) -
   // by construction that only ever happens while already connected, so
@@ -164,6 +169,12 @@ export function useSocket() {
           case 'backendLogs':
             setBackendLog(msg.data as BackendLogEntry[]);
             break;
+          // Full replace each time (unlike backendLogLine's own append) -
+          // the backend already sends the complete capped list on every
+          // change, same as settingsStore's own 'change' broadcast.
+          case 'consoleHistory':
+            setConsoleHistory(msg.data as string[]);
+            break;
           case 'updateStatus': {
             const data = msg.data as UpdateStatus;
             setUpdateStatus(data);
@@ -263,6 +274,7 @@ export function useSocket() {
     fluidncSettings,
     plugins,
     backendLog,
+    consoleHistory,
     updateStatus,
     send,
     invokePluginAction,

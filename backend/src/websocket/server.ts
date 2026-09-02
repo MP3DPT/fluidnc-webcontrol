@@ -9,6 +9,7 @@ import { SettingsStore, type Settings } from '../settings/store.js';
 import { rebootSystem, restartService, shutdownSystem } from '../system/power.js';
 import { PluginLoader } from '../plugins/loader.js';
 import type { LogStore } from '../logging/logStore.js';
+import type { ConsoleHistoryStore } from '../console/historyStore.js';
 import { applyUpdate } from '../update/updater.js';
 
 // backend/src/websocket/server.ts -> backend/plugins-bundled
@@ -26,6 +27,12 @@ type ClientMessage =
   | { type: 'feedHold' }
   | { type: 'cycleStart' }
   | { type: 'gcode'; line: string }
+  // What the user actually typed into the Console tab's input and sent -
+  // recorded separately from 'gcode' itself since plenty of *other* UI
+  // controls (Zero X, the jog panel's 0,0 button, ...) also send raw
+  // lines via 'gcode' and shouldn't clutter this history with things the
+  // user never typed. See ConsoleHistoryStore.
+  | { type: 'consoleHistoryAdd'; line: string }
   | { type: 'updateSettings'; settings: Partial<Settings> }
   | { type: 'restoreSettings'; settings: unknown }
   | { type: 'updatePluginSettings'; pluginId: string; settings: Record<string, unknown> }
@@ -58,6 +65,7 @@ export async function attachWebSocketServer(
   connection: FluidNCConnection,
   httpApp: Express,
   logStore: LogStore,
+  historyStore: ConsoleHistoryStore,
 ) {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   const runner = new ProgramRunner(connection);
@@ -179,6 +187,9 @@ export async function attachWebSocketServer(
   settingsStore.on('change', forward('settings'));
 
   logStore.on('line', forward('backendLogLine'));
+  // Broadcast (not just reply-to-sender) so every open browser's history
+  // dropdown stays in sync, matching settingsStore's own reasoning.
+  historyStore.on('change', forward('consoleHistory'));
 
   wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ type: 'connectionState', data: { isOpen: connection.isOpen } }));
@@ -187,6 +198,7 @@ export async function attachWebSocketServer(
     ws.send(JSON.stringify({ type: 'settings', data: settingsStore.get() }));
     ws.send(JSON.stringify({ type: 'plugins', data: pluginLoader.list() }));
     ws.send(JSON.stringify({ type: 'backendLogs', data: logStore.list() }));
+    ws.send(JSON.stringify({ type: 'consoleHistory', data: historyStore.list() }));
     ws.send(JSON.stringify({ type: 'updateStatus', data: updateStatus }));
 
     ws.on('message', async (raw) => {
@@ -239,6 +251,9 @@ export async function attachWebSocketServer(
             break;
           case 'gcode':
             await connection.sendLine(msg.line);
+            break;
+          case 'consoleHistoryAdd':
+            historyStore.add(msg.line);
             break;
           case 'updateSettings':
             settingsStore.update(msg.settings);

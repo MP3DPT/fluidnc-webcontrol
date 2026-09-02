@@ -6,6 +6,7 @@ import { FluidNCConnection } from './serial/connection.js';
 import { attachWebSocketServer } from './websocket/server.js';
 import { FileLibraryStore } from './files/store.js';
 import { LogStore } from './logging/logStore.js';
+import { ConsoleHistoryStore } from './console/historyStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 8000);
@@ -21,6 +22,7 @@ async function main() {
   // up in the buffer the Logs panel reads from.
   const logStore = new LogStore();
   logStore.attachToConsole();
+  const historyStore = new ConsoleHistoryStore();
 
   const app = express();
   app.use(express.static(FRONTEND_DIST));
@@ -49,7 +51,13 @@ async function main() {
     console.log(`fluidnc-webcontrol listening on http://0.0.0.0:${PORT}`);
   });
 
-  const { pluginLoader, broadcastPlugins, startAppUpdate } = await attachWebSocketServer(server, connection, app, logStore);
+  const { pluginLoader, broadcastPlugins, startAppUpdate } = await attachWebSocketServer(
+    server,
+    connection,
+    app,
+    logStore,
+    historyStore,
+  );
 
   // Raw zip upload - deliberately not JSON, and capped well above any
   // reasonable plugin's size so a malformed upload fails fast instead of

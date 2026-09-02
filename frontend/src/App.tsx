@@ -56,6 +56,7 @@ export default function App() {
     fluidncSettings,
     plugins,
     backendLog,
+    consoleHistory,
     updateStatus,
     send,
     invokePluginAction,
@@ -504,6 +505,7 @@ export default function App() {
                         defaultFeed={settings?.general.consoleDefaultFeed ?? 300}
                         autoScroll={autoScroll}
                         expanded={consoleExpanded}
+                        history={consoleHistory}
                         send={send}
                       />
                     ),
