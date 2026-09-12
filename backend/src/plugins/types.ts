@@ -32,19 +32,16 @@ export interface PluginManifest {
    */
   tool?: boolean;
   /**
-   * True for a "tool" plugin whose dialog should open filling the whole
-   * screen rather than the normal small modal - e.g. a live camera preview
-   * that genuinely needs the space. The frontend requests real Fullscreen
-   * API fullscreen for this too (see App.tsx's onOpen handler, which
-   * requests it on document.documentElement synchronously inside the click
-   * that opens the dialog - the only place that's early enough: even one
-   * React effect tick later, after PluginToolDialog itself has mounted, the
-   * browser's transient user-activation window has already expired and the
-   * request is refused every time). Ignored on "panel" plugins. If the
-   * Fullscreen API request is refused for any reason, the dialog still
-   * renders at its full-viewport CSS size regardless - real fullscreen only
-   * additionally removes the browser's own chrome, it isn't required for
-   * the dialog to be usable.
+   * True for a "tool" plugin whose dialog should fill the whole browser
+   * window rather than the normal small modal - e.g. a live camera preview
+   * that genuinely needs the space. Deliberately doesn't request real
+   * Fullscreen API fullscreen (no document.documentElement.
+   * requestFullscreen() call anywhere) - tried that first, but hiding the
+   * browser's own chrome (tabs, address bar) loses access to the rest of
+   * the browser while the dialog is open, which isn't worth it for this use
+   * case, and it also caused a real bug (a native <input type="file">
+   * picker forces real fullscreen to exit, which closed the whole dialog
+   * mid-selection). Ignored on "panel" plugins.
    */
   fullscreen?: boolean;
 }

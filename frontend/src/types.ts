@@ -118,7 +118,7 @@ export interface PluginManifest {
   panelColumn?: 'left' | 'right';
   /** True if this plugin is a one-off tool (a G-code generator, a wizard) opened on demand from the sidebar's Tools tab as a modal, served at /api/plugins/<id>/dialog - see backend/src/plugins/types.ts for the full rationale. */
   tool?: boolean;
-  /** True for a "tool" plugin whose dialog should fill the whole screen instead of the normal small modal - see backend/src/plugins/types.ts for the full rationale. */
+  /** True for a "tool" plugin whose dialog should fill the whole browser window instead of the normal small modal - see backend/src/plugins/types.ts for the full rationale. */
   fullscreen?: boolean;
 }
 

@@ -2289,9 +2289,9 @@ button.ghost:not(:disabled):hover {
 
 /* A manifest "fullscreen": true tool dialog (see PluginToolDialog.tsx) -
    fills the entire viewport edge to edge rather than the normal centered
-   box, whether or not the underlying Fullscreen API request that goes with
-   it actually succeeded (that only removes the browser's own chrome; this
-   is what makes the dialog itself worth having that space). */
+   box. Deliberately not paired with a real Fullscreen API request (no
+   requestFullscreen() call anywhere) - the browser's own chrome (tabs,
+   address bar) stays visible on purpose. */
 .tool-dialog-overlay--fullscreen {
   padding: 0;
   background: var(--surface);

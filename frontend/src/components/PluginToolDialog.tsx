@@ -92,27 +92,17 @@ export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, on
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // The actual requestFullscreen() call lives in App.tsx's onOpen handler,
-  // not here - it has to run synchronously inside the click that opens this
-  // dialog, on an element that already exists at that point (document.
-  // documentElement). By the time this component's own effects run, even
-  // on the very first mount, the browser's transient user-activation window
-  // has already expired and a request made here is refused every time
-  // (confirmed live) - so this dialog doesn't request fullscreen itself.
-  //
-  // Deliberately doesn't also close the dialog on "fullscreenchange" when
-  // fullscreen ends - that seemed reasonable at first (avoid a small modal
-  // reappearing unannounced) but broke a real plugin: opening a native
-  // <input type="file"> picker forces the browser to exit fullscreen first
-  // (every browser does this, unconditionally, for any native OS dialog -
-  // not something a page can opt out of), which closed this whole dialog
-  // mid-selection and lost whatever the user was about to pick. The
-  // existing Escape-key handler above already covers "user wants to close",
-  // independent of fullscreen state - and since the full-viewport sizing
-  // below is keyed off the manifest flag rather than live fullscreen state,
-  // nothing actually shrinks back to a small modal if real fullscreen ends
-  // for some other reason either; it just quietly loses the browser's own
-  // chrome-hiding until re-entered (or the dialog is closed normally).
+  // "fullscreen" here means filling the browser window, not real OS/browser
+  // chrome-hiding fullscreen (no document.documentElement.requestFullscreen()
+  // call anywhere) - deliberately dropped after live testing: hiding the
+  // browser's own tabs/address bar loses access to the rest of the browser
+  // while the dialog is open, which isn't worth it for this use case. This
+  // class alone already does everything actually wanted (fill the window),
+  // with none of real fullscreen's downsides - including the bug it used to
+  // cause here: a native <input type="file"> picker forces real fullscreen
+  // to exit (every browser does this, unconditionally), which used to close
+  // this whole dialog mid-selection. With no real fullscreen requested,
+  // there's no such state to lose in the first place.
   const fullscreen = Boolean(plugin.manifest.fullscreen);
 
   return (
@@ -130,12 +120,11 @@ export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, on
           title={plugin.manifest.name}
           className="tool-dialog-frame"
           // The contentHeight bridge sizes a normal dialog to fit its content
-          // exactly - a fullscreen one should instead just fill whatever
-          // space fullscreen granted it (see the matching CSS rule), so skip
-          // the reported height here rather than have the two fight.
+          // exactly - a fullscreen one should instead just fill the window
+          // (see the matching CSS rule), so skip the reported height here
+          // rather than have the two fight.
           style={!fullscreen && height !== null ? { height } : undefined}
           sandbox="allow-scripts allow-same-origin allow-popups"
-          allowFullScreen
           onLoad={postCoreState}
         />
       </div>
