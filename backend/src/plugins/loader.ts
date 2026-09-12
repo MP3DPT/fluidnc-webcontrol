@@ -148,8 +148,17 @@ export class PluginLoader {
       app: router,
     };
 
+    // Node's ESM loader caches an imported module by its exact URL for the
+    // life of the process - since entryPath is always the same path
+    // (PLUGINS_DIR/<id>/index.js), reinstalling a plugin (install() below
+    // rewrites that same file on disk) would otherwise re-import the same
+    // URL and get back the stale, already-cached module instead of the new
+    // code, silently behaving like the old version until a full process
+    // restart. A cache-busting query param forces a genuinely fresh import
+    // every time this runs. plugin.json/settingsSchema.json don't need this -
+    // they're read with plain readFileSync, which never caches.
     const entryPath = join(dir, manifest.entry);
-    const imported = await import(pathToFileURL(entryPath).href);
+    const imported = await import(`${pathToFileURL(entryPath).href}?v=${Date.now()}`);
     const mod: FluidNCPluginModule = imported.default ?? imported;
     const result = await mod.activate(ctx);
     if (typeof result === 'function') loaded.cleanup = result;
