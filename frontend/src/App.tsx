@@ -247,16 +247,6 @@ export default function App() {
         <ToolsPanel
           plugins={plugins}
           onOpen={(plugin) => {
-            // Fullscreen must be requested synchronously inside the actual
-            // click handler, on an element that already exists (the whole
-            // page, here) - by the time PluginToolDialog itself mounts and
-            // its iframe exists, even one React effect tick later, the
-            // browser's transient user-activation window has already
-            // expired and the request is refused (confirmed live: an effect
-            // on mount is one task too late for this, every time).
-            if (plugin.manifest.fullscreen) {
-              document.documentElement.requestFullscreen().catch(() => {});
-            }
             setOpenToolPlugin(plugin);
             setActivePanel(null);
           }}
