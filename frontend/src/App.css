@@ -2287,6 +2287,30 @@ button.ghost:not(:disabled):hover {
   min-height: 20rem;
 }
 
+/* A manifest "fullscreen": true tool dialog (see PluginToolDialog.tsx) -
+   fills the entire viewport edge to edge rather than the normal centered
+   box, whether or not the underlying Fullscreen API request that goes with
+   it actually succeeded (that only removes the browser's own chrome; this
+   is what makes the dialog itself worth having that space). */
+.tool-dialog-overlay--fullscreen {
+  padding: 0;
+  background: var(--surface);
+}
+
+.tool-dialog--fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  max-width: none;
+  border-radius: 0;
+  border: none;
+}
+
+.tool-dialog--fullscreen .tool-dialog-frame {
+  flex: 1;
+  min-height: 0;
+}
+
 /* ============================================================
    Settings / Plugins drawer content
    ============================================================ */
