@@ -149,9 +149,18 @@ function boundingBoxSize(segments: Segment[]): { x: number; y: number; z: number
 }
 
 function feedRange(segments: Segment[]): [number, number] | null {
-  const feeds = segments.filter((s) => !s.rapid && s.feedrate > 0).map((s) => s.feedrate);
-  if (feeds.length === 0) return null;
-  return [Math.min(...feeds), Math.max(...feeds)];
+  // Deliberately a running min/max, not Math.min(...feeds)/Math.max(...feeds) -
+  // spreading one argument per element blows the call stack once a file has
+  // enough cutting moves (confirmed: a ~1.5MB file was enough to trigger
+  // "Maximum call stack size exceeded" here, see GitHub issue #4).
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const s of segments) {
+    if (s.rapid || s.feedrate <= 0) continue;
+    if (s.feedrate < lo) lo = s.feedrate;
+    if (s.feedrate > hi) hi = s.feedrate;
+  }
+  return lo === Infinity ? null : [lo, hi];
 }
 
 function formatTool(t: ToolInfo): string {
