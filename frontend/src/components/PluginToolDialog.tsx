@@ -98,22 +98,21 @@ export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, on
   // documentElement). By the time this component's own effects run, even
   // on the very first mount, the browser's transient user-activation window
   // has already expired and a request made here is refused every time
-  // (confirmed live) - so this dialog only ever reacts to fullscreen
-  // state, it doesn't request it.
+  // (confirmed live) - so this dialog doesn't request fullscreen itself.
   //
-  // If fullscreen ends for any reason (Escape, the browser's own exit
-  // control, etc.) while this is a fullscreen-flagged dialog, close the
-  // whole dialog rather than leaving the small modal to reappear on its
-  // own - that would read as a bug, not a deliberate "back to normal size".
-  useEffect(() => {
-    if (!plugin.manifest.fullscreen) return;
-    const onFullscreenChange = () => {
-      if (!document.fullscreenElement) onClose();
-    };
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, [plugin.manifest.fullscreen, onClose]);
-
+  // Deliberately doesn't also close the dialog on "fullscreenchange" when
+  // fullscreen ends - that seemed reasonable at first (avoid a small modal
+  // reappearing unannounced) but broke a real plugin: opening a native
+  // <input type="file"> picker forces the browser to exit fullscreen first
+  // (every browser does this, unconditionally, for any native OS dialog -
+  // not something a page can opt out of), which closed this whole dialog
+  // mid-selection and lost whatever the user was about to pick. The
+  // existing Escape-key handler above already covers "user wants to close",
+  // independent of fullscreen state - and since the full-viewport sizing
+  // below is keyed off the manifest flag rather than live fullscreen state,
+  // nothing actually shrinks back to a small modal if real fullscreen ends
+  // for some other reason either; it just quietly loses the browser's own
+  // chrome-hiding until re-entered (or the dialog is closed normally).
   const fullscreen = Boolean(plugin.manifest.fullscreen);
 
   return (
