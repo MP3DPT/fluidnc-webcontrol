@@ -92,9 +92,33 @@ export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, on
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // The actual requestFullscreen() call lives in App.tsx's onOpen handler,
+  // not here - it has to run synchronously inside the click that opens this
+  // dialog, on an element that already exists at that point (document.
+  // documentElement). By the time this component's own effects run, even
+  // on the very first mount, the browser's transient user-activation window
+  // has already expired and a request made here is refused every time
+  // (confirmed live) - so this dialog only ever reacts to fullscreen
+  // state, it doesn't request it.
+  //
+  // If fullscreen ends for any reason (Escape, the browser's own exit
+  // control, etc.) while this is a fullscreen-flagged dialog, close the
+  // whole dialog rather than leaving the small modal to reappear on its
+  // own - that would read as a bug, not a deliberate "back to normal size".
+  useEffect(() => {
+    if (!plugin.manifest.fullscreen) return;
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) onClose();
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, [plugin.manifest.fullscreen, onClose]);
+
+  const fullscreen = Boolean(plugin.manifest.fullscreen);
+
   return (
-    <div className="tool-dialog-overlay" onClick={onClose}>
-      <div className="tool-dialog" onClick={(e) => e.stopPropagation()}>
+    <div className={`tool-dialog-overlay${fullscreen ? ' tool-dialog-overlay--fullscreen' : ''}`} onClick={onClose}>
+      <div className={`tool-dialog${fullscreen ? ' tool-dialog--fullscreen' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="tool-dialog-header">
           <h3>{plugin.manifest.name}</h3>
           <button className="icon-button" onClick={onClose} aria-label="Close">
@@ -106,8 +130,13 @@ export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, on
           src={`/api/plugins/${plugin.manifest.id}/dialog`}
           title={plugin.manifest.name}
           className="tool-dialog-frame"
-          style={height !== null ? { height } : undefined}
+          // The contentHeight bridge sizes a normal dialog to fit its content
+          // exactly - a fullscreen one should instead just fill whatever
+          // space fullscreen granted it (see the matching CSS rule), so skip
+          // the reported height here rather than have the two fight.
+          style={!fullscreen && height !== null ? { height } : undefined}
           sandbox="allow-scripts allow-same-origin allow-popups"
+          allowFullScreen
           onLoad={postCoreState}
         />
       </div>
