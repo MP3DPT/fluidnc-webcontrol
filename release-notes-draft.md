@@ -1,20 +1,18 @@
-# fluidnc-webcontrol v0.4.9
+# fluidnc-webcontrol v0.4.10
 
 Small patch release - one real bug fix, no other user-facing changes.
 
-## Fixed: "Maximum call stack size exceeded" on larger G-code files
+## Fixed: reinstalling a plugin didn't pick up the new code without a restart
 
-Files around 1.5MB or larger (roughly 50,000+ lines) failed immediately when uploaded through the File Manager, and crashed the main dashboard to a blank screen when loaded via the Program tab's Load File — both requiring a manual browser refresh to recover, with no file actually loaded either way.
+Installing an updated version of an already-installed plugin (via a `.zip` re-upload) silently kept running the *old* code until a manual `sudo systemctl restart fluidnc-webcontrol` or a Pi reboot - confusing when developing or testing a plugin update, since nothing in the UI indicated the update hadn't actually taken effect.
 
-Root cause: computing a file's feed-rate range for its metadata spread every cutting-move line's feedrate as individual arguments into `Math.min(...)`/`Math.max(...)` - fine for small files, but enough lines blows the JS engine's call-stack argument limit. Fixed with a running min/max loop instead, the same safe pattern already used elsewhere in the same function for bounding-box size.
+Root cause: Node's ESM module loader caches an imported module by its exact URL for the life of the process. The plugin loader always imports a plugin's entry module from the same path (`.../plugins/<id>/index.js`), so reinstalling (which rewrites that file on disk) and re-importing it returned the same stale, already-cached module instead of the new code. `plugin.json`/`settingsSchema.json` were never affected (read directly from disk each time, no caching) - only the actual plugin code was stuck.
 
-Verified against a synthetic 1.7MB/66,713-line file through both previously-failing paths (File Manager upload, and Program tab Load File) - both now complete successfully with correct metadata and no console errors.
-
-Thanks to @rdarkness for the detailed bug report and diagnostics export ([#4](https://github.com/MP3DPT/fluidnc-webcontrol/issues/4)).
+Fixed with a cache-busting parameter on the import, so a reinstall now always loads genuinely fresh code - no restart needed, matching what was already documented as the intended behavior.
 
 ## Upgrading
 
-This reaches an already-flashed Pi through the in-app **Update now** button (About page) - no new SD card image needed for this release, since it's a frontend-only fix. See [Updating the App](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Updating-the-App) if you haven't used it before.
+This reaches an already-flashed Pi through the in-app **Update now** button (About page) - no new SD card image needed for this release, since it's a backend-only fix. See [Updating the App](https://github.com/MP3DPT/fluidnc-webcontrol/wiki/Updating-the-App) if you haven't used it before.
 
 ## Full changelog
 
