@@ -209,6 +209,12 @@ export default function App() {
     [settings?.general.spoilboardWidth, settings?.general.spoilboardHeight],
   );
 
+  // Same stable-reference reasoning as workingArea above.
+  const parkCorner = useMemo(
+    () => ({ x: settings?.general.parkX ?? 'home', y: settings?.general.parkY ?? 'home' }),
+    [settings?.general.parkX, settings?.general.parkY],
+  );
+
   return (
     <>
       <Sidebar
@@ -272,7 +278,8 @@ export default function App() {
           send={send}
           invokePluginAction={invokePluginAction}
           onLoadGcode={applyLoadedFile}
-          workingArea={{ width: settings?.general.spoilboardWidth ?? 0, height: settings?.general.spoilboardHeight ?? 0 }}
+          workingArea={workingArea}
+          parkCorner={parkCorner}
         />
       )}
 

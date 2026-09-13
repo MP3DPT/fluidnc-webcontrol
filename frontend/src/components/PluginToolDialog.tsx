@@ -11,6 +11,8 @@ interface Props {
   onLoadGcode: (name: string, gcode: string) => void;
   /** Settings → Working Area (0 means "not configured") - handed to the dialog so a plugin like Surfacing / Facing can offer "use my working area size" without duplicating that setting. */
   workingArea: { width: number; height: number };
+  /** Settings → Working Area → Park Corner (settings.general.parkX/parkY) - handed to the dialog so a plugin can send the spindle to the user's own configured "safe" corner instead of duplicating that setting. */
+  parkCorner: { x: 'home' | 'far'; y: 'home' | 'far' };
 }
 
 /**
@@ -29,13 +31,13 @@ interface Props {
  *    after successfully generating something and loading it via
  *    "loadGcode" below.
  */
-export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, onLoadGcode, workingArea }: Props) {
+export function PluginToolDialog({ plugin, onClose, send, invokePluginAction, onLoadGcode, workingArea, parkCorner }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState<number | null>(null);
   const origin = window.location.origin;
 
   const postCoreState = () => {
-    iframeRef.current?.contentWindow?.postMessage({ type: 'coreState', config: plugin.config, workingArea }, origin);
+    iframeRef.current?.contentWindow?.postMessage({ type: 'coreState', config: plugin.config, workingArea, parkCorner }, origin);
   };
 
   // Deliberately sent from iframe onLoad only, not also from an effect keyed
