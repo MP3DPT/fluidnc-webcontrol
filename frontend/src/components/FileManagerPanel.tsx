@@ -4,7 +4,6 @@ import type { DiskUsage, FileEntry, Folder } from '../types';
 import { parseToolpath } from '../gcode/parseToolpath';
 import { renderThumbnail } from '../gcode/renderThumbnail';
 import { extractMetadata, type GcodeMetadata } from '../gcode/extractMetadata';
-import { formatDuration } from '../gcode/estimateTime';
 
 interface Props {
   onLoad: (name: string, gcode: string) => void;
@@ -31,7 +30,6 @@ function metadataLines(m: GcodeMetadata): string[] {
     const { x, y, z } = m.dimensions;
     lines.push(`${x.toFixed(1)} × ${y.toFixed(1)} × ${z.toFixed(1)} mm`);
   }
-  if (m.estimatedSeconds > 0) lines.push(`Est. time: ${formatDuration(m.estimatedSeconds)}`);
   if (m.feedRateRange) {
     const [lo, hi] = m.feedRateRange;
     lines.push(`Feed: ${lo === hi ? lo : `${lo}–${hi}`} mm/min`);

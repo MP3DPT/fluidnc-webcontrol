@@ -11,7 +11,7 @@ import type {
   StatusReport,
   UpdateStatus,
 } from '../types';
-import type { MachineRates } from '../gcode/estimateTime';
+import type { JobClock } from '../lib/jobTime';
 
 const RECONNECT_DELAY_MS = 2000;
 let logIdCounter = 0;
@@ -32,13 +32,19 @@ export function useSocket() {
   const [ports, setPorts] = useState<PortInfo[]>([]);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [lastProbeResult, setLastProbeResult] = useState<ProbeResult | null>(null);
-  const [programStatus, setProgramStatus] = useState<ProgramStatus>({ state: 'idle', sent: 0, total: 0 });
+  const [programStatus, setProgramStatus] = useState<ProgramStatus>({
+    state: 'idle',
+    sent: 0,
+    total: 0,
+    elapsedMs: 0,
+    lastRunSeconds: null,
+  });
+  // When the backend's elapsedMs arrived, so the running timer can tick
+  // between messages without ever comparing against the backend's clock.
+  const [jobClock, setJobClock] = useState<JobClock>({ elapsedMs: 0, receivedAt: performance.now() });
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [machineRates, setMachineRates] = useState<MachineRates | null>(null);
   // The full raw $$ dump (every "$N" key, e.g. $20 soft limits, $23 homing
-  // direction, $130/$131 max travel) - kept alongside the narrower
-  // machineRates extraction above rather than replacing it, since existing
-  // code already depends on that shape. Used by the Job Completion settings
+  // direction, $130/$131 max travel). Used by the Job Completion settings
   // section to show whether Park's prerequisites are actually met.
   const [fluidncSettings, setFluidncSettings] = useState<Record<string, number> | null>(null);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
@@ -149,9 +155,18 @@ export function useSocket() {
             break;
           case 'programStatus':
             setProgramStatus(msg.data as ProgramStatus);
+            setJobClock({ elapsedMs: (msg.data as ProgramStatus).elapsedMs, receivedAt: performance.now() });
             break;
           case 'programLoaded':
-            setProgramStatus((prev) => ({ ...prev, state: 'idle', sent: 0, total: msg.data.total }));
+            setProgramStatus((prev) => ({
+              ...prev,
+              state: 'idle',
+              sent: 0,
+              total: msg.data.total,
+              elapsedMs: 0,
+              lastRunSeconds: msg.data.lastRunSeconds ?? null,
+            }));
+            setJobClock({ elapsedMs: 0, receivedAt: performance.now() });
             appendLog('info', `Loaded ${msg.data.name} (${msg.data.total} lines)`);
             break;
           case 'programProgress':
@@ -209,9 +224,6 @@ export function useSocket() {
           }
           case 'firmwareSettings': {
             const raw = msg.data as Record<string, number>;
-            if (raw['$110'] !== undefined && raw['$111'] !== undefined && raw['$112'] !== undefined) {
-              setMachineRates({ x: raw['$110'], y: raw['$111'], z: raw['$112'] });
-            }
             setFluidncSettings(raw);
             break;
           }
@@ -252,9 +264,9 @@ export function useSocket() {
     });
   }, [send]);
 
-  // Re-fetch the machine's real rate settings every time a connection opens
-  // (including reconnects), so time estimates use current values without
-  // the rest of the app needing to remember to ask.
+  // Re-fetch the machine's firmware settings every time a connection opens
+  // (including reconnects), so they're current without the rest of the app
+  // needing to remember to ask.
   useEffect(() => {
     if (connectionOpen) send({ type: 'getFirmwareSettings' });
   }, [connectionOpen, send]);
@@ -269,8 +281,8 @@ export function useSocket() {
     log,
     lastProbeResult,
     programStatus,
+    jobClock,
     settings,
-    machineRates,
     fluidncSettings,
     plugins,
     backendLog,

@@ -65,8 +65,7 @@ export function AboutPanel({ latestVersion, onOpenUpdate }: Props) {
         <p className="hint">
           FluidNC ships with a built-in web UI - including on boards like the PiBot V4.96 PRO, where it comes
           pre-loaded - but it's a bare-bones one: enough to jog and run a job, not much else. Its file list is flat,
-          with no folders, no thumbnails, and no job info before you hit run - no feed/speed, no size, no time
-          estimate. No live toolpath preview either, thin jog controls, and no way to extend it without touching
+          with no folders, no thumbnails, and no job info before you hit run - no feed/speed, no size. No live toolpath preview either, thin jog controls, and no way to extend it without touching
           firmware. This app exists to fill those gaps - the same FluidNC controller underneath, a fuller browser
           interface on top, and a plugin system so anyone can bolt on what their own setup needs.
         </p>

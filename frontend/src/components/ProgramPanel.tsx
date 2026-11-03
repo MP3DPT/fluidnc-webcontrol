@@ -1,16 +1,14 @@
 import { useRef } from 'react';
 import { FileUp, Pause, Play, Square, Trash2 } from 'lucide-react';
 import type { ProgramStatus } from '../types';
-import { formatDuration, type TimingEstimate } from '../gcode/estimateTime';
+import { formatClock } from '../lib/jobTime';
 
 interface Props {
   fileName: string | null;
   metadataSummary: string | null;
   programStatus: ProgramStatus;
-  timing: TimingEstimate;
+  /** Real cutting time of the current/last run (pauses excluded), ticking live while running. */
   elapsedSeconds: number;
-  currentPass: number;
-  hasMachineRates: boolean;
   disabled: boolean;
   onFileSelected: (file: File) => void;
   onClear: () => void;
@@ -30,10 +28,7 @@ export function ProgramPanel({
   fileName,
   metadataSummary,
   programStatus,
-  timing,
   elapsedSeconds,
-  currentPass,
-  hasMachineRates,
   disabled,
   onFileSelected,
   onClear,
@@ -48,6 +43,18 @@ export function ProgramPanel({
   const canPause = !disabled && programStatus.state === 'running';
   const canResume = !disabled && programStatus.state === 'paused';
   const canStop = !disabled && (programStatus.state === 'running' || programStatus.state === 'paused');
+
+  // Measured, never estimated: the live timer while cutting, the real cut
+  // time once finished, and otherwise how long this same file took last time.
+  const { state, lastRunSeconds } = programStatus;
+  let timeLine: string | null = null;
+  if (isActive) timeLine = `Elapsed: ${formatClock(elapsedSeconds)}`;
+  else if (state === 'complete') timeLine = `Cut time: ${formatClock(elapsedSeconds)}`;
+  else if ((state === 'stopped' || state === 'error') && elapsedSeconds > 0) timeLine = `Stopped after ${formatClock(elapsedSeconds)}`;
+  if (!isActive && lastRunSeconds !== null && state !== 'complete') {
+    const last = `Last cut: ${formatClock(lastRunSeconds)}`;
+    timeLine = timeLine ? `${timeLine} — ${last}` : last;
+  }
 
   const handleRun = () => {
     if (programStatus.state === 'complete') {
@@ -95,12 +102,7 @@ export function ProgramPanel({
           <p className="hint">
             {STATE_LABELS[programStatus.state]} — {programStatus.sent} / {programStatus.total} lines ({percent}%)
           </p>
-          <p className="hint">
-            {isActive
-              ? `Remaining: ${formatDuration(timing.totalSeconds - elapsedSeconds)} — pass ${currentPass || 1} of ${timing.passCount}`
-              : `Estimated: ${formatDuration(timing.totalSeconds)} — ${timing.passCount} pass${timing.passCount === 1 ? '' : 'es'}`}
-            {!hasMachineRates && ' (approximate — connect to the machine for an accurate estimate)'}
-          </p>
+          {timeLine && <p className="hint">{timeLine}</p>}
         </>
       )}
 
