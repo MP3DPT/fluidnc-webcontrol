@@ -1,5 +1,4 @@
 import { parseToolpath, type Segment } from './parseToolpath';
-import { estimateTiming } from './estimateTime';
 
 export interface ToolInfo {
   number: number;
@@ -17,13 +16,6 @@ export interface GcodeMetadata {
   /** Raw text of leading comment lines (CAM post-processors often put tool/material notes here) - shown verbatim since there's no standard format to parse. */
   headerComments: string[];
   lineCount: number;
-  /**
-   * Rough estimate using the file's own F feedrates and a generic rapid
-   * rate (the real per-machine $110-$112 rates aren't known at save time,
-   * only once connected) - same ballpark caveat as the Program tab's own
-   * estimate before a machine's real rates are read.
-   */
-  estimatedSeconds: number;
 }
 
 const WORD_RE = /([A-Za-z])\s*(-?\d*\.?\d+)/g;
@@ -125,7 +117,6 @@ export function extractMetadata(gcodeText: string): GcodeMetadata {
     dimensions: boundingBoxSize(segments),
     headerComments,
     lineCount,
-    estimatedSeconds: estimateTiming(segments, null).totalSeconds,
   };
 }
 

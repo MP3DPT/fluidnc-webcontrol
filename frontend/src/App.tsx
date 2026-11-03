@@ -5,7 +5,7 @@ import type { PluginInfo } from './types';
 import { parseToolpath, xyBoundsOf } from './gcode/parseToolpath';
 import { renderThumbnail } from './gcode/renderThumbnail';
 import { extractMetadata, formatMetadataSummary } from './gcode/extractMetadata';
-import { currentPassAt, elapsedSecondsAt, estimateTiming, formatDuration } from './gcode/estimateTime';
+import { formatClock, useJobElapsedSeconds } from './lib/jobTime';
 import { Header } from './components/Header';
 import { ConnectPanel } from './components/ConnectPanel';
 import { StatusPanel } from './components/StatusPanel';
@@ -52,7 +52,7 @@ export default function App() {
     lastProbeResult,
     programStatus,
     settings,
-    machineRates,
+    jobClock,
     fluidncSettings,
     plugins,
     backendLog,
@@ -74,15 +74,7 @@ export default function App() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [gcodeText, setGcodeText] = useState('');
   const segments = useMemo(() => parseToolpath(gcodeText), [gcodeText]);
-  const timing = useMemo(() => estimateTiming(segments, machineRates), [segments, machineRates]);
-  const elapsedSeconds = useMemo(
-    () => elapsedSecondsAt(segments, timing, programStatus.sent),
-    [segments, timing, programStatus.sent],
-  );
-  const currentPass = useMemo(
-    () => currentPassAt(segments, programStatus.sent),
-    [segments, programStatus.sent],
-  );
+  const elapsedSeconds = useJobElapsedSeconds(programStatus.state, jobClock);
   const metadataSummary = useMemo(() => formatMetadataSummary(extractMetadata(gcodeText)), [gcodeText]);
 
   // Duplicates ProgramPanel's own percent/isActive - deliberately, so this
@@ -420,9 +412,7 @@ export default function App() {
                 {jobActive && (
                   <div className="job-progress-overlay">
                     <div className="job-progress-percent">{jobPercent}%</div>
-                    <div className="job-progress-remaining">
-                      {formatDuration(timing.totalSeconds - elapsedSeconds)} left
-                    </div>
+                    <div className="job-progress-remaining">{formatClock(elapsedSeconds)} elapsed</div>
                   </div>
                 )}
               </div>
@@ -458,10 +448,7 @@ export default function App() {
                         fileName={fileName}
                         metadataSummary={metadataSummary}
                         programStatus={programStatus}
-                        timing={timing}
                         elapsedSeconds={elapsedSeconds}
-                        currentPass={currentPass}
-                        hasMachineRates={machineRates !== null}
                         disabled={controlsDisabled || updateStatus.status === 'running'}
                         onFileSelected={loadFile}
                         onClear={clearFile}

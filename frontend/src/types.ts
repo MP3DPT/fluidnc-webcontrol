@@ -73,6 +73,10 @@ export interface ProgramStatus {
   state: ProgramState;
   sent: number;
   total: number;
+  /** Real cutting time of the current/last run in ms - pauses excluded, frozen once the run ended. 0 before any run. */
+  elapsedMs: number;
+  /** How long this same G-code (matched by content) took the last time it ran to completion, or null if it never has. */
+  lastRunSeconds: number | null;
 }
 
 /** Mirrors the backend's own UpdateStatus union exactly (see
